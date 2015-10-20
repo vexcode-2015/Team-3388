@@ -31,7 +31,7 @@ void mecDrive(){
 	if(abs(vexRT[Ch2]) > JOYSTICK_DEADZONE){
 	 	speed = vexRT[Ch2]/127;
 	}
-	if(abs(vexRT[Ch2]) > JOYSTICK_DEADZONE){
+	if(abs(vexRT[Ch1]) > JOYSTICK_DEADZONE){
 		turnSpeed = vexRT[Ch1]/127;
 	}
 
