@@ -25,8 +25,7 @@ void mecDrive(){
 		x = vexRT[Ch4];
 	}
 	if(abs(vexRT[Ch3]) > JOYSTICK_DEADZONE){
-		y = vexRT[Ch3];
-		
+		y = vexRT[Ch3];	
 	}
 	if(abs(vexRT[Ch2]) > JOYSTICK_DEADZONE){
 	 	speed = vexRT[Ch2]/127;
