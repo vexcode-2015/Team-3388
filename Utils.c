@@ -1,9 +1,6 @@
 #ifndef Utils.c
 #define Utils.c
 
-
-
-
 const unsigned int _MotorMap[128] =
 {
   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -21,14 +18,12 @@ const unsigned int _MotorMap[128] =
  88, 89, 89, 90, 90,127,127,127
 };
 
-
 int threshold(int in, int deadzone){
 	if(abs(in) < deadzone){
 		return 0;
 	}
 	return in;
 }
-
 
 void setMotorPow(tMotor index, int power){
 	motor[index] = power > 0 ? _MotorMap[power] : -1 * _MotorMap[power];
@@ -53,5 +48,49 @@ void printBatteryToLCD(){
  	
 }
 
-
+void readAutoNum(){
+	int autoSelect = 0;
+	while(nLCDButtons != 2){ //While center not pressed
+    if(nLCDButtons == 0) {//No button pressed 
+      printBatteryToLCD();
+      wait1Msec(10); //Do nothing
+  	}
+    else{ //Some button was pressed
+      if(nLCDButtons == 1){
+      	clearLCDLine(0);                                            // Clear line 1 (0) of the LCD
+		clearLCDLine(1);     
+      	if(autoSelect != 2){
+        	 autoSelect = 2;         
+			displayLCDString(0, 0, "Blue Side Auto Selected");
+      	}
+      	else{
+      		autoSelect = 0;
+      		displayLCDString(0,0, "Center Auto Selected");
+      	}
+		while((nLCDButtons == 1)){
+		wait1Msec(50);
+		}
+      }
+      else if(nLCDButtons == 4){
+      	clearLCDLine(0);                                            // Clear line 1 (0) of the LCD
+		clearLCDLine(1);  
+      	if(autoSelect != 1){
+      		autoSelect = 1;   
+			displayLCDString(0, 0, "Red Side Auto Selected");
+		else{
+      		autoSelect = 0;
+      		displayLCDString(0,0, "Center Auto Selected");
+      	}
+		while((nLCDButtons == 4)){
+		wait1Msec(50);
+		}
+        //Increment if right press
+      }
+      //Update display
+      while(nLCDButtons != 0){//Wait for release
+        wait1Msec(10); //Wait for multitasking.
+      }
+    }
+  }
+}
 #endif

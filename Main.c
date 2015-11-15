@@ -32,23 +32,26 @@ void pre_auton()
 	initMecDrive(dr);
 	fly.f1 = mFly1; fly.f2 = mFly2; fly.f3 = mFly3; fly.f4 = mFly4;
 	fly.enc = encWheel;
+	int autoNum = 0;
+	autoNum = readAutoNum();
 }
 
 void driveIntake(int ticks){
 	int dTicks = 0;
 	int iTicks = SensorValue[ encIntake ];
-		while(abs(dTicks) < abs(ticks)){
-	//		writeDebugStreamLine("%f   %f",SensorValue[encIntake], dTicks);
-			motor[ mIntake2 ] = ticks > 0 ? 127 : -127;
-			motor[ mIntake ] = ticks > 0 ? 127 : -127;
-			dTicks = SensorValue[encIntake] - iTicks;
-			wait1Msec(20);
-		}
-		motor[ mIntake ] =  0 ;
+	while(abs(dTicks) < abs(ticks)){
+	//	writeDebugStreamLine("%f   %f",SensorValue[encIntake], dTicks);
+		motor[ mIntake2 ] = ticks > 0 ? 127 : -127;
+		motor[ mIntake ] = ticks > 0 ? 127 : -127;
+		dTicks = SensorValue[encIntake] - iTicks;
+		wait1Msec(20);
+	}
+	motor[ mIntake ] =  0 ;
 }
 
 task autonomous()
 {
+
 		initFlyWheel(fly);
 		setFlyWheel(LONG_RPM, LONG_PRED);
 		wait1Msec(3000);
@@ -61,6 +64,17 @@ task autonomous()
 		driveIntake(400);
 		wait1Msec(3000);
 		driveIntake(400);
+	switch(autoNum){
+		case 0:{
+			break;
+		}
+		case 1:{
+			break;
+		}
+		case 2:{
+			break;
+		}
+	}
 }
 
 task intakeControl(){
@@ -159,26 +173,19 @@ task usercontrol()
 	startTask(intakeControl, 3);
 	while(true)
 	{
-	//	_mecDrive();
+		//	_mecDrive();
 
-	writeDebugStreamLine("%f, coeff %f  %f SETTLE TIME %f",error, coeff, Y, nSysTime);
+		writeDebugStreamLine("%f, coeff %f  %f SETTLE TIME %f",error, coeff, Y, nSysTime);
 
-	/**	if(vexRT[Btn7D] == 1){
-			coeff = coeff + 0.0005;
-			writeDebugStreamLine("%f",coeff);
-			while(vexRT[Btn7D] == 1){
-				wait1Msec(20);
-			}
-		}	 **/
-	if(abs(error) > 100){
-			long sTime = nSysTime;
-			while(abs(error) > 10){
-				wait1Msec(50);
-			}
-			writeDebugStreamLine("%f, coeff %f  %f SETTLE TIME %f",error, coeff, Y, nSysTime - sTime);
-		}
-	//	writeDebugStreamLine("%f, %f  %f",error, nAvgBatteryLevel, Y);
-	//writeDebugStreamLine("curr %f, set %f", FwCalculateSpeed(), _setRPM);
+		/**	if(vexRT[Btn7D] == 1){
+				coeff = coeff + 0.0005;
+				writeDebugStreamLine("%f",coeff);
+				while(vexRT[Btn7D] == 1){
+					wait1Msec(20);
+				}
+			}	 **/
+		//	writeDebugStreamLine("%f, %f  %f",error, nAvgBatteryLevel, Y);
+		//writeDebugStreamLine("curr %f, set %f", FwCalculateSpeed(), _setRPM);
 		wait1Msec(100);
 	}
 }

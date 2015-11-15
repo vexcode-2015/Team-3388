@@ -25,10 +25,19 @@ typedef struct {
 
 fw_motors _fly;
 void _updateFlyWheel(int power){
+	/**
 	motor[_fly.f1] = power;
 	motor[_fly.f2] = power;
 	motor[_fly.f3] = power;
-	motor[_fly.f4] = power;
+	motor[_fly.f4] = power; **/
+	_updateFlyWheelLin(power);
+}
+
+void _updateFlyWheelLin(){
+	setMotorPow(_fly.f1, power);
+	setMotorPow(_fly.f2, power);
+	setMotorPow(_fly.f3, power);
+	setMotorPow(_fly.f4, power);
 }
 
 
@@ -86,24 +95,12 @@ void setFlyWheel(int rpm, int pred){
 
 //use take back half to spin us up 
 float spinUp(int rpm){
+	_setRPM = rpm;
 	float tbh = 0;
 	double prevError = 0;
 	float errorOT = 0;
 	long steadyTimer = nPgmTime;
 	while(true){
-		if(vexRT[Btn8D]){
-			setFlyWheel(0,0);
-		}
-		if(vexRT[Btn8L]){
-			setFlyWheel(860,30);
-		}
-		if(vexRT[Btn8R]){
-			setFlyWheel(1050,40);
-		}
-		if(vexRT[Btn8U]){
-			setFlyWheel(LONG_RPM,LONG_PRED);
-		}
-
 		curr = FwCalculateSpeed();
 		error = _setRPM - curr;
 
@@ -139,22 +136,26 @@ float setPoint = 0;
 
 		if(vexRT[Btn8D]){
 			setFlyWheel(0,0);
-			setPoint = spinUp(Y);
+			setPoint = spinUp(0);
 		}
 		if(vexRT[Btn8L]){
-			setFlyWheel(860,30);
-			setPoint = spinUp(Y);
+			setFlyWheel(1050,30);
+			setPoint = spinUp(1050);
 		}
 		if(vexRT[Btn8R]){
 			setFlyWheel(1050,40);
-			setPoint = spinUp(Y);
+			setPoint = spinUp(1050);
 		}
 		if(vexRT[Btn8U]){
 			setFlyWheel(LONG_RPM,LONG_PRED);
-			setPoint = spinUp(Y);
+			setPoint = spinUp(LONG_RPM);
 			writeDebugStreamLine("Engaged PID");
 		}
-		_updateFlyWheel(pidExecute(fly.flyPID, _setRPM - curr));
+		float outVal = pidExecute(fly.flyPID, _setRPM - curr);
+		if(outVal < 0){
+			outVal = 0;
+		}
+		_updateFlyWheel(Y + outVal);
 		delay(FW_LOOP_SPEED);
 	}
 }
@@ -229,7 +230,7 @@ void initFlyWheel(fw_motors* initMotors){
 	_fly.f3 = initMotors->f3;
 	_fly.f4 = initMotors->f4;
 	_fly.enc = initMotors->enc;
-	pidInit(_fly.pid,0.02,0,0.01,50,1270);
+	pidInit(_fly.pid,0.02,0,0.01,51,1270);
 //	writeDebugStreamLine("FLY %d %d %d %d", _fly.f1,_fly.f2, _fly.f3, _fly.f4);
 	//startTask(FlyWheelControl);
 	startTask(PIDFlyControl);

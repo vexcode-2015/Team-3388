@@ -121,6 +121,9 @@ void zeroDriveEncoders(){
 	SensorValue[mec.encRight] = 0;
 }
 
+void printDriveEncoderes(){
+	writeDebugStreamLine("LEFT ENCODER : %f RIGHT ENCODER: %f", SensorValue[fly.encLeft], SensorValue[fly.encRight]);
+}
 
 
 void _mecDrive(){
