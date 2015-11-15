@@ -121,8 +121,9 @@ void zeroDriveEncoders(){
 	SensorValue[mec.encRight] = 0;
 }
 
-void printDriveEncoderes(){
-	writeDebugStreamLine("LEFT ENCODER : %f RIGHT ENCODER: %f", SensorValue[fly.encLeft], SensorValue[fly.encRight]);
+void printDriveEncoders(){
+	writeDebugStreamLine("LEFT ENCODER : %f RIGHT ENCODER: %f",
+	 SensorValue[fly.encLeft], SensorValue[fly.encRight]);
 }
 
 
@@ -160,7 +161,6 @@ task _PIDmecDrive(){
 	int initTicksL = 0;
 	int initTicksR = 0;
 	while(pidEnabled){
-
 		//eed to calculate currentVel 
 		int x1 = vexRT[Ch4];
 		int y1 = vexRT[Ch3];

@@ -26,7 +26,7 @@ fw_motors fly;
 void pre_auton()
 {
 	printBatteryToLCD();
- 	bStopTasksBetweenModes = true;
+	bStopTasksBetweenModes = true;
 	DriveBase dr;
 	dr.fl = mDrFl; dr.fr = mDrFr; dr.bl = mDrBl;	dr.br = mDrBr;
 	initMecDrive(dr);
@@ -52,18 +52,18 @@ void driveIntake(int ticks){
 task autonomous()
 {
 
-		initFlyWheel(fly);
-		setFlyWheel(LONG_RPM, LONG_PRED);
-		wait1Msec(3000);
-		driveIntake(400);
-		wait1Msec(3000);
-		writeDebugStreamLine("%f",SensorValue[encIntake]);
-		driveIntake(400);
-		wait1Msec(3000);
-		writeDebugStreamLine("%f",SensorValue[encIntake]);
-		driveIntake(400);
-		wait1Msec(3000);
-		driveIntake(400);
+	initFlyWheel(fly);
+	setFlyWheel(LONG_RPM, LONG_PRED);
+	wait1Msec(3000);
+	driveIntake(400);
+	wait1Msec(3000);
+	writeDebugStreamLine("%f",SensorValue[encIntake]);
+	driveIntake(400);
+	wait1Msec(3000);
+	writeDebugStreamLine("%f",SensorValue[encIntake]);
+	driveIntake(400);
+	wait1Msec(3000);
+	driveIntake(400);
 	switch(autoNum){
 		case 0:{
 			break;
@@ -142,29 +142,40 @@ task intakeControl(){
 
 //calibrate
 void calibrate(){
-		coeff = 0;
-		for(int i = 1; i<100; i++){
-			coeff = 0.001 + 0.0002 * i;
-			writeDebugStreamLine("Testing Coeff %f", coeff);
-			setFlyWheel(LONG_RPM,LONG_PRED);
-			long pTime = nSysTime;
-			long nTime = nSysTime;
-			while(abs(pTime - nSysTime) < 4000){
-				if(abs(error) > 100){
+	coeff = 0;
+	for(int i = 1; i<100; i++){
+		coeff = 0.001 + 0.0002 * i;
+		writeDebugStreamLine("Testing Coeff %f", coeff);
+		setFlyWheel(LONG_RPM,LONG_PRED);
+		long pTime = nSysTime;
+		long nTime = nSysTime;
+		while(abs(pTime - nSysTime) < 4000){
+			if(abs(error) > 100){
 				long sTime = nSysTime;
-						while(abs(error) > 10 && (abs(pTime - nSysTime) < 4000)){
-							wait1Msec(50);
-						}
-					writeDebugStreamLine("%f, coeff %f  %f SETTLE TIME %f",error, coeff, Y, nSysTime - sTime);
+				while(abs(error) > 10 && (abs(pTime - nSysTime) < 4000)){
+					wait1Msec(50);
 				}
-			}
-			setFlyWheel(0,0);
-			while(abs(error) > 10){
-				//writeDebugStreamLine("zeroing");
-				wait1Msec(500);
+				writeDebugStreamLine("%f, coeff %f  %f SETTLE TIME %f",error, coeff, Y, nSysTime - sTime);
 			}
 		}
+		setFlyWheel(0,0);
+		while(abs(error) > 10){
+				//writeDebugStreamLine("zeroing");
+			wait1Msec(500);
+		}
 	}
+}
+
+
+void driveTesting(){
+		if(vexRT[Btn7D] == 1){
+			printDriveEncoders();
+		}	 
+
+		if(vexRT[Btn7L] == 1){
+			zeroDriveEncoders();
+		} 
+}
 
 
 task usercontrol()
@@ -173,17 +184,13 @@ task usercontrol()
 	startTask(intakeControl, 3);
 	while(true)
 	{
-		//	_mecDrive();
+		_mecDrive();
+		//driveTesting();
+
 
 		writeDebugStreamLine("%f, coeff %f  %f SETTLE TIME %f",error, coeff, Y, nSysTime);
 
-		/**	if(vexRT[Btn7D] == 1){
-				coeff = coeff + 0.0005;
-				writeDebugStreamLine("%f",coeff);
-				while(vexRT[Btn7D] == 1){
-					wait1Msec(20);
-				}
-			}	 **/
+		
 		//	writeDebugStreamLine("%f, %f  %f",error, nAvgBatteryLevel, Y);
 		//writeDebugStreamLine("curr %f, set %f", FwCalculateSpeed(), _setRPM);
 		wait1Msec(100);
