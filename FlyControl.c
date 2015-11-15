@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 
 #ifndef FlyControl.c
 #define FlyControl.c
@@ -8,6 +7,8 @@
 // Update inteval (in mS) for the flywheel control loop
 #define FW_LOOP_SPEED		30
 
+
+#include "Utils.c"
 //typedef struct _fw_controller {
 // int a;
 //} fw_controller;
@@ -18,6 +19,7 @@ typedef struct {
 	tMotor f3;
 	tMotor f4;
 	tSensors enc;
+	PID flyPID;
 } fw_motors;
 
 
@@ -79,10 +81,15 @@ void setFlyWheel(int rpm, int pred){
 			predictedVal = pred;
 }
 
-		float p = 0.05;
 
-task PIDFlyControl(){
-float errorOT = 0;
+
+
+//use take back half to spin us up 
+float spinUp(int rpm){
+	float tbh = 0;
+	double prevError = 0;
+	float errorOT = 0;
+	long steadyTimer = nPgmTime;
 	while(true){
 		if(vexRT[Btn8D]){
 			setFlyWheel(0,0);
@@ -99,26 +106,56 @@ float errorOT = 0;
 
 		curr = FwCalculateSpeed();
 		error = _setRPM - curr;
-		int prevError = error;
 
-		//	writeDebugStreamLine("POW %d",Y);
+		Y += coeff*error;														// integrate the output;
+		if (Y>127) Y=127; else if (Y<0) Y=0;		// clamp the output to 0..+1;
+			if (sgn(error)!=sgn(prevError)){
+			if(firstCross){
+				Y = predictedVal;
+				firstCross = false;
+				tbh = Y;
+			}// if zero crossing,
+			else{
+				Y = 0.5*(Y+tbh);								// then Take Back Half
+				tbh = Y;
+			}
+		}
+		prevError = error;
+		_updateFlyWheel(Y);
+		wait1Msec(FW_LOOP_SPEED);
+		if(abs(error) > 100){
+			steadyTimer = nPgmTime;
+		}
+		if((nPgmTime - steadyTimer) > 200){
+			return Y;
+		}
+	}
+}
 
-		float i = 0;//0.003;
-		float d = 0.008;
-		errorOT += error * FW_LOOP_SPEED;
-		float errorD = (error - prevError) / FW_LOOP_SPEED;
-		if (sgn(error)!=sgn(prevError)){
-			errorOT = 0;
+task PIDFlyControl(){
+float errorOT = 0;
+float setPoint = 0;
+	while(true){
+
+		if(vexRT[Btn8D]){
+			setFlyWheel(0,0);
+			setPoint = spinUp(Y);
 		}
-		int pidResult = p * error + i * errorOT + errorD * d;
-		if(pidResult < 0){
-			_updateFlyWheel(0);
+		if(vexRT[Btn8L]){
+			setFlyWheel(860,30);
+			setPoint = spinUp(Y);
 		}
-		else{
-			_updateFlyWheel(predictedVal + p * error + i * errorOT + errorD * d);
+		if(vexRT[Btn8R]){
+			setFlyWheel(1050,40);
+			setPoint = spinUp(Y);
 		}
-				wait1Msec(FW_LOOP_SPEED);
-					writeDebugStreamLine("%f, coeff %f  %f SETTLE TIME %f",error, coeff, Y, nSysTime);
+		if(vexRT[Btn8U]){
+			setFlyWheel(LONG_RPM,LONG_PRED);
+			setPoint = spinUp(Y);
+			writeDebugStreamLine("Engaged PID");
+		}
+		_updateFlyWheel(pidExecute(fly.flyPID, _setRPM - curr));
+		delay(FW_LOOP_SPEED);
 	}
 }
 
@@ -192,56 +229,10 @@ void initFlyWheel(fw_motors* initMotors){
 	_fly.f3 = initMotors->f3;
 	_fly.f4 = initMotors->f4;
 	_fly.enc = initMotors->enc;
+	pidInit(_fly.pid,0.02,0,0.01,50,1270);
 //	writeDebugStreamLine("FLY %d %d %d %d", _fly.f1,_fly.f2, _fly.f3, _fly.f4);
 	//startTask(FlyWheelControl);
 	startTask(PIDFlyControl);
 }
 
 #endif
-=======
-
-#ifndef FlyControl.c
-#define FlyControl.c
-
-// Update inteval (in mS) for the flywheel control loop
-#define FW_LOOP_SPEED              25
-
-//typedef struct _fw_controller {
-// int a;
-//} fw_controller;
-
-typedef struct fw_motors{
-	int m[4];
-} fw_motors;
-
-fw_motors _flyWheelM;
-void initFlyWheel(fw_motors* initMotors){
-	_flyWheelM = *initMotors;
-}
-
-void _updateFlyWheel(int power){
-	motor[_flyWheelM.m[0]] = power;
-	motor[_flyWheelM.m[1]] = power;
-	motor[_flyWheelM.m[2]] = power;
-	motor[_flyWheelM.m[3]] = power;
-}
-
-task FlyWheelControl(){
-	while(true){
-		if(vexRT[Btn5U]){
-			_updateFlyWheel(127);
-		}
-		if(vexRT[Btn5D]){
-			_updateFlyWheel(100);
-		}
-		if(vexRT[Btn6D]){
-			_updateFlyWheel(70);
-		}
-		if(vexRT[Btn6U]){
-			_updateFlyWheel(90);
-		}
-		delay(FW_LOOP_SPEED);
-	}
-}
-#endif
->>>>>>> b5e3c73c6bd360a3b94b865e28670ac787d211c8
