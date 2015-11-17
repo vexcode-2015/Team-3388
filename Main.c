@@ -1,6 +1,7 @@
 
 #pragma config(Sensor, dgtl1,  encWheel,       sensorQuadEncoder)
 #pragma config(Sensor, dgtl3,  encIntake,      sensorQuadEncoder)
+#pragma config(Sensor, in1,    gyroDrive,           sensorGyro)
 #pragma config(Motor,  port1,           mIntake,       tmotorVex393_HBridge, openLoop)
 #pragma config(Motor,  port2,           mFly1,         tmotorVex393TurboSpeed_MC29, openLoop)
 #pragma config(Motor,  port3,           mFly2,         tmotorVex393TurboSpeed_MC29, openLoop, reversed)
@@ -23,16 +24,19 @@
 #include "Vex_Competition_Includes.c"
 
 fw_motors fly;
+int autoNum = 0;
 void pre_auton()
 {
 	printBatteryToLCD();
-	bStopTasksBetweenModes = true;
+	bStopTasksBetweenModes = false;
 	DriveBase dr;
 	dr.fl = mDrFl; dr.fr = mDrFr; dr.bl = mDrBl;	dr.br = mDrBr;
+	dr.gyro = gyroDrive;
 	initMecDrive(dr);
+	printCalibratingGyro();
+	enableGyro();
 	fly.f1 = mFly1; fly.f2 = mFly2; fly.f3 = mFly3; fly.f4 = mFly4;
 	fly.enc = encWheel;
-	int autoNum = 0;
 	autoNum = readAutoNum();
 }
 
@@ -51,7 +55,7 @@ void driveIntake(int ticks){
 
 task autonomous()
 {
-
+	GyroResetAngle();
 	initFlyWheel(fly);
 	setFlyWheel(LONG_RPM, LONG_PRED);
 	wait1Msec(3000);
@@ -180,6 +184,7 @@ void driveTesting(){
 
 task usercontrol()
 {
+	GyroResetAngle();
 	initFlyWheel(fly);
 	startTask(intakeControl, 3);
 	while(true)

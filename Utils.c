@@ -1,6 +1,8 @@
 #ifndef Utils.c
 #define Utils.c
 
+#include "SmartMotorLib.c"
+
 const unsigned int _MotorMap[128] =
 {
   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -33,6 +35,15 @@ void setMotorPow(tMotor index, int power, int deadzone){
 	motor[index] = threshold(power > 0 ? _MotorMap[power] : -1 * _MotorMap[power]);
 }
 
+void setSmartPow(tMotor index, int power){
+	SetMotor(index,power > 0 ? _MotorMap[power] : -1 * _MotorMap[power];);
+}
+
+void printCalibratingGyro(){
+	clearLCDLine(0);                                            // Clear line 1 (0) of the LCD
+	clearLCDLine(1);     
+	displayLCDString(0, 0, "Calibrating gyro... ");
+}
 
 void printBatteryToLCD(){
 	clearLCDLine(0);                                            // Clear line 1 (0) of the LCD

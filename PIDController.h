@@ -11,16 +11,35 @@ typedef struct {
 	float output, lastOutput;
 } PID;
 
+void printPIDDebug(PID &pid){
+	writeDebugStreamLine("Error %f, Error sum %f, output %f, lastoutput %f ",
+		 pid.error, pid.errorSum, pid.output, pid.lastOutput);
+}
+
+
 void pidInit(PID &pid, float kP, float kI, float kD, float epsilon, float slewRate){
 	pid.kP = kP;
 	pid.kI = kI;
 	pid.kD = kD;
 	pid.epsilon = epsilon;
+	pid.slewRate = slewRate;
 
 }
 
 void pidFilteredOut(PID &pid){
+	float filteredOut = pid.output;
+	if(pid.dT != 0)
+	{
+		if(abs(pid.output - pid.lastOutput)/pid.dT > pid.slewRate)
+			filteredOut = pid.lastOutput + pid.slewRate*pid.dT * (pid.output/abs(pid.output));
+		else
+			filteredOut = pid.output;
+	}
+	if(abs(filteredOut) > 127)
+		filteredOut = 127 * filteredOut/abs(filteredOut);
 
+	pid.lastOutput = filteredOut;
+	return filteredOut;
 }
 
 
@@ -52,5 +71,13 @@ float pidExecute(PID &pid, float error){
 	return pidFilteredOutput(pid);
 }
 
+
+void pidReset(PID &pid)
+{
+	pid.errorSum = 0;
+	pid.dT = 0;
+	pid.lastOutput = 0;
+	pid.lastError = 0;
+}
 
 #endif

@@ -1,28 +1,4 @@
-/*-----------------------------------------------------------------------------*/
-/*                                                                             */
-/*                                                                             */
-/*-----------------------------------------------------------------------------*/
-/*                                                                             */
-/*                        Copyright (c) James Pearman                          */
-/*                                   2012                                      */
-/*                            All Rights Reserved                              */
-/*                                                                             */
-/*-----------------------------------------------------------------------------*/
-/*                                                                             */
-/*        Module:     GyroLib.c                                                */
-/*        Author:     James Pearman                                            */
-/*        Created:    2 Oct 2012                                               */
-/*                                                                             */
-/*        Revisions:  V0.1                                                     */
-/*                                                                             */
-/*-----------------------------------------------------------------------------*/
-/*                                                                             */
-/*        Description:                                                         */
-/*                                                                             */
-/*        Make using the Gyro easier                                           */
-/*                                                                             */
-/*-----------------------------------------------------------------------------*/
-/*                                                                             */
+
 
 // Stop recursive includes
 #ifndef __GYROLIB__
@@ -34,15 +10,17 @@ typedef struct {
     bool     valid;
     float    angle;
     float    abs_angle;
+    bool reset;
     } gyroData;
 
 static  gyroData    theGyro = {in1, false, 0.0, 0.0};
 
-/*-----------------------------------------------------------------------------*/
-/*                                                                             */
-/*  Small debugging function                                                   */
-/*                                                                             */
-/*-----------------------------------------------------------------------------*/
+
+void GyroResetAngle(){
+    theGyro.reset = true;
+}
+
+
 
 void
 GyroDebug( int displayLine )
@@ -59,11 +37,6 @@ GyroDebug( int displayLine )
         displayLCDString(displayLine, 0, "Init Gyro.." );
 }
 
-/*-----------------------------------------------------------------------------*/
-/*                                                                             */
-/*  Task that polls the Gyro and calculates the angle of rotation              */
-/*                                                                             */
-/*-----------------------------------------------------------------------------*/
 
 task GyroTask()
 {
@@ -97,6 +70,16 @@ task GyroTask()
     // loop forever
     while(true)
         {
+        if(theGyro.reset){
+            SensorValue[theGyro.port] = 0;
+            gyro_error = 0;
+            lastDriftGyro = 0;
+            old_angle = 0;
+            angle = 0;
+            delta_angle = 0;
+            nSysTimeOffset = nSysTime;
+            theGyro.reset = false;
+        }
         // get current gyro value (deg * 10)
         gyro_value = SensorValue[theGyro.port];
 
@@ -192,6 +175,8 @@ GyroGetValid()
 {
     return( theGyro.valid );
 }
+
+
 
 
 #endif  //__GYROLIB__
