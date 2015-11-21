@@ -2,32 +2,33 @@
 #ifndef FlyControl.c
 #define FlyControl.c
 
-#define LONG_RPM  		2970
-#define LONG_PRED  		72
+#define LONG_RPM  		3040
+#define LONG_PRED  		75
 #define FW_LOOP_SPEED	30
 
 
 #include "Utils.c"
-
+#include "PIDController.h"
+#include "MecDrive.c"
 typedef struct {
 	tMotor f1;
 	tMotor f2;
-	tMotor f3;
-	tMotor f4;
 	tSensors enc;
 	tSensors sonar;
 	PID flyPID;
 } fw_motors;
 
 
+
+
 fw_motors _fly;
 
 void sensorSpeedGen(){
-	return distanceToRpm(SensorValue[_fly.sonar]);
+
 }
 
 void distanceToRpm(){
-	
+
 }
 
 
@@ -71,10 +72,10 @@ static double launcher_data[] = {
 	8.0405055415951,
 	8.1289009571972
 };
-//distance in meters 
+//distance in meters
 double get_required_rpm(double distance) {
 	int index = (distance - 1.2192) / 0.1016;
-	
+
 	if(index >= 0 && index < 38) {
 		// v = r * RPM * 0.10472
 		return launcher_data[index] / (12.7 * 0.10472);
@@ -83,15 +84,19 @@ double get_required_rpm(double distance) {
 }
 
 float getRpmFromDrive(){
-	
-}
 
-void spinFlyWheelAuto(){
-	setFlyWheel(get_required_rpm(getNetDistance()), 80);
-	spinUp(get_required_rpm(getNetDistance()));
 }
 
 
+void _updateFlyWheelLin(int power){
+	if(power > 127){
+		power = 127;
+	}
+	setLinMotorPow(_fly.f1, power);
+	setLinMotorPow(_fly.f2, power);
+	//setLinMotorPow(_fly.f3, power);
+	//setLinMotorPow(_fly.f4, power);
+}
 void _updateFlyWheel(int power){
 	/**
 	motor[_fly.f1] = power;
@@ -101,12 +106,6 @@ void _updateFlyWheel(int power){
 	_updateFlyWheelLin(power);
 }
 
-void _updateFlyWheelLin(){
-	setMotorPow(_fly.f1, power);
-	setMotorPow(_fly.f2, power);
-	setMotorPow(_fly.f3, power);
-	setMotorPow(_fly.f4, power);
-}
 
 long						nSysTime_last;
 long						encoder_counts;					///< current encoder count
@@ -115,18 +114,18 @@ float FwCalculateSpeed()
 {
 	int			delta_ms;
 	int			delta_enc;
-	encoder_counts = SensorValue[_fly.enc] ;
+	encoder_counts = -SensorValue[_fly.enc] ;
 	delta_ms = nSysTime - nSysTime_last;
 	nSysTime_last = nSysTime;
 	delta_enc = (encoder_counts - encoder_counts_last);
 	encoder_counts_last = encoder_counts;
-	return (1000.0 / delta_ms) * delta_enc ;
+	return (1000.0 / delta_ms) * delta_enc;
 }
 
 float curr;
 int _setRPM;
 float error;
-float coeff = 0.007;//0.002;//0.007;//0.0015500;//0.250000;
+float coeff = 0.002;//0.002;//0.007;//0.0015500;//0.250000;
 float Y = 0;
 int predictedVal = 0;
 bool firstCross = false;
@@ -137,7 +136,9 @@ void setFlyWheel(int rpm, int pred){
 	predictedVal = pred;
 }
 
-//use take back half to spin us up 
+
+
+//use take back half to spin us up
 float spinUp(int rpm){
 	_setRPM = rpm;
 	float tbh = 0;
@@ -167,48 +168,71 @@ float spinUp(int rpm){
 		if(abs(error) > 100){
 			steadyTimer = nPgmTime;
 		}
-		if((nPgmTime - steadyTimer) > 200){
+		if((nPgmTime - steadyTimer) > 1000){
 			return Y;
 		}
 	}
 }
 
+
+void spinFlyWheelAuto(){
+	//_setFlyWheel(get_required_rpm(getNetDistance()), 80);
+	//spinUp(get_required_rpm(getNetDistance()));
+}
+
+
+
 task PIDFlyControl(){
 float errorOT = 0;
 float setPoint = 0;
+	pidReset(_fly.flyPID);
+	pidInit(_fly.flyPID, 0.05, 0, 0.006, 100, 9999);
+	float output = 0;
 	while(true){
 		if(vexRT[Btn8D]){
-			setFlyWheel(0,0);
-			setPoint = spinUp(0);
-			pidReset(fly.flyPID);
+			setPoint = 0;
+			pidReset(_fly.flyPID);
 		}
 		if(vexRT[Btn8L]){
-			setFlyWheel(1050,30);
-			setPoint = spinUp(1050);
-			pidReset(fly.flyPID);
+			setPoint = 1980;
+			pidReset(_fly.flyPID);
 		}
 		if(vexRT[Btn8R]){
-			setFlyWheel(1050,40);
-			setPoint = spinUp(1050);
-			pidReset(fly.flyPID);
+			setPoint = 2450;
+			pidReset(_fly.flyPID);
 		}
 		if(vexRT[Btn8U]){
 			setFlyWheel(LONG_RPM,LONG_PRED);
-			setPoint = spinUp(LONG_RPM);
-			pidReset(fly.flyPID);
+			//setPoint = spinUp(LONG_RPM);
+			pidReset(_fly.flyPID);
+			setPoint = LONG_RPM;
 			writeDebugStreamLine("Engaged PID");
 		}
 		if(vexRT[Btn7R]){
 			spinFlyWheelAuto();
-			pidReset(fly.flyPID);
+			pidReset(_fly.flyPID);
 			writeDebugStreamLine("Engaged PID");
+
 		}
 		curr = FwCalculateSpeed();
-		float outVal = pidExecute(fly.flyPID, _setRPM - curr);
-		if(outVal < 0){
-			outVal = 0;
+		float outVal = pidExecute(_fly.flyPID, setPoint - curr);
+
+		if(abs(_setRPM - curr) < 100){
+			statusLightSet(1);
 		}
-		_updateFlyWheel(Y + outVal);
+		else{
+			statusLightSet(0);
+		}
+	// writeDebugStreamLine("OUTVAL = %f", outVal);
+		output += (outVal);
+		if(output < 0){
+			output = 0;
+		}
+		if(output > 127){
+			output = 127;
+		}
+		_updateFlyWheel(output);
+
 		delay(FW_LOOP_SPEED);
 	}
 }
@@ -224,21 +248,20 @@ task FlyWheelControl(){
 			setFlyWheel(0,0);
 		}
 		if(vexRT[Btn8L]){
-			setFlyWheel(860,30);
+			setFlyWheel(2060,40);
 		}
 		if(vexRT[Btn8R]){
-			setFlyWheel(1050,40);
+			setFlyWheel(2550,60);
 		}
 		if(vexRT[Btn8U]){
 			setFlyWheel(LONG_RPM,LONG_PRED);
 		}
 
-
 		curr = FwCalculateSpeed();
 		error = _setRPM - curr;
 
-		Y += coeff*error;														// integrate the output;
-		if (Y>127) Y=127; else if (Y<0) Y=0;		// clamp the output to 0..+1;
+		Y += coeff*error;
+		if (Y>127) Y=127; else if (Y<0) Y=0;
 			if (sgn(error)!=sgn(prevError)){
 			if(firstCross){
 				Y = predictedVal;
@@ -246,33 +269,13 @@ task FlyWheelControl(){
 				tbh = Y;
 			}// if zero crossing,
 			else{
-				Y = 0.5*(Y+tbh);								// then Take Back Half
+				Y = 0.5*(Y+tbh);
 				tbh = Y;
 			}
 		}
 		prevError = error;
 		_updateFlyWheel(Y);
-		wait1Msec(FW_LOOP_SPEED);
-
-
-		//	writeDebugStreamLine("POW %d",Y);
-	/**
-		float p = 0.4;
-		float i = 0;//0.003;
-		float d = 0;
-		errorOT += error * FW_LOOP_SPEED;
-		float errorD = (error - prevError) / FW_LOOP_SPEED;
-		if (sgn(error)!=sgn(prevError)){
-			errorOT = 0;
-		}
-		int pidResult = p * error + i * errorOT + errorD * d;
-		if(pidResult < 0){
-			_updateFlyWheel(0);
-		}
-		else{
-			_updateFlyWheel(p * error + i * errorOT + errorD * d);
-		}
-		**/
+		wait1Msec(FW_LOOP_SPEED );
 	}
 }
 
@@ -280,13 +283,11 @@ void initFlyWheel(fw_motors* initMotors){
 	_fly = *initMotors;
 	_fly.f1 = initMotors->f1;
 	_fly.f2 = initMotors->f2;
-	_fly.f3 = initMotors->f3;
-	_fly.f4 = initMotors->f4;
 	_fly.enc = initMotors->enc;
-	pidInit(_fly.pid,0.02,0,0.01,100,1270);
-//	writeDebugStreamLine("FLY %d %d %d %d", _fly.f1,_fly.f2, _fly.f3, _fly.f4);
+	pidInit(_fly.flyPID, 0.15, 0, 0.001, 100, 9999);
+	//writeDebugStreamLine("FLY %d %d %d %d", _fly.f1,_fly.f2, _fly.f3, _fly.f4);
 	//startTask(FlyWheelControl);
-	startTask(PIDFlyControl);
+	startTask(PIDFlyControl, 20);
 }
 
 #endif
