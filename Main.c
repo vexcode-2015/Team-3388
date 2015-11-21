@@ -1,10 +1,12 @@
 #pragma config(UART_Usage, UART1, uartVEXLCD, baudRate19200, IOPins, None, None)
 #pragma config(UART_Usage, UART2, uartNotUsed, baudRate4800, IOPins, None, None)
 #pragma config(Sensor, in1,    gyroDrive,      sensorNone)
+#pragma config(Sensor, in3,    lfIntake,       sensorLineFollower)
+#pragma config(Sensor, in4,    lfOuter,        sensorLineFollower)
 #pragma config(Sensor, dgtl1,  encLeftDr,      sensorQuadEncoder)
-#pragma config(Sensor, dgtl7,  encIntake,      sensorQuadEncoder)
 #pragma config(Sensor, dgtl5,  encFlywheel,    sensorQuadEncoder)
-#pragma config(Sensor, dgtl10, statusLightRed,    sensorDigitalOut)
+#pragma config(Sensor, dgtl7,  encIntake,      sensorQuadEncoder)
+#pragma config(Sensor, dgtl10, statusLightRed, sensorDigitalOut)
 #pragma config(Sensor, dgtl11, encRightDr,     sensorQuadEncoder)
 #pragma config(Motor,  port1,           mIntake,       tmotorVex393HighSpeed_HBridge, openLoop)
 #pragma config(Motor,  port2,           mFly1,         tmotorVex393TurboSpeed_MC29, openLoop)
@@ -44,6 +46,12 @@ void pre_auton()
 	dr.gyro = gyroDrive;
 	dr.encLeft = encLeftDr;
 	dr.encRight = encRightDr;
+
+	IntakeInit(mIntake, mIntake2, lfIntake, lfOuter, encIntake);
+
+
+
+
 initMecDrive(dr);
 	printCalibratingGyro();
 	enableGyro();
@@ -60,8 +68,12 @@ task autonomous()
 	wait1Msec(3000);
 	GyroResetAngle();
 
-	gyroTurnDegreesRel(90);
 
+	//driveInches(-12);
+
+	gyroTurnDegreesRel(180);
+
+	//driveInches(-12);
 	//turnDegrees(-90);
 	/**
 	initFlyWheel(fly);
@@ -146,16 +158,9 @@ task usercontrol()
 		//writeDebugStreamLine("%f", GyroGetAngle());
 	//printPIDDebug(_fly.flyPID);
 	//writeDebugStreamLine("%f", motor[mFly1]);
-
-	long initTime = nPgmTime;
-	while(abs(_fly.flyPID.error) > 100){
-		wait1Msec(20);
-		if(abs(_fly.flyPID.error) < 100){
-			writeDebugStreamLine("Settle time : %f", nPgmTime - initTime);
-		}
-	}
+	printPIDDebug(mec.master);
+	writeDebugStreamLine("%f", ballCount);
 //	writeDebugStreamLine("%f : %f", curr, motor[mFly1]);
-
 
 //	writeDebugStreamLine("%d", motor[mFly1]);
 
