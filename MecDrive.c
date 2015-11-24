@@ -181,7 +181,10 @@ void enableGyro(){
 	GyroInit(mec.gyro);
 }
 
-void driveInches(float inches){
+
+
+
+void driveInches(float inches, int maxSpeed){
 	pidInit(mec.slave, 	0.6,0.05,0,0,1270);
 	mec.pidEnabled = false;
 	bool targetReached = false;
@@ -212,6 +215,9 @@ void driveInches(float inches){
 			driveOut = driveOut / n;
 			slaveOut = slaveOut / n;
 		}
+		if(abs(driveOut) > maxSpeed){
+			driveOut = maxSpeed * (driveOut/abs(driveOut));
+		}
 		_setLeftDrivePow(driveOut);
 		_setRightDrivePow((driveOut + slaveOut));
 
@@ -227,6 +233,11 @@ void driveInches(float inches){
 	}
 	mec.pidEnabled = true;
 }
+
+void driveInches(float inches){
+	driveInches(inches,127);
+}
+
 
 //prints encoder values for left and right
 void printDriveEncoders(){

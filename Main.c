@@ -54,6 +54,9 @@ void pre_auton()
 	wait1Msec(1500)
 	enableGyro();
 	wait1Msec(3000);
+
+	bool redSide = true;
+
 	while((nVexRCReceiveState & vrDisabled)){
 		printBatteryToLCD();
 	}
@@ -67,11 +70,18 @@ task autonomous()
 	wait1Msec(2500);
 	autonomousShoot();
 	wait1Msec(700);
-	gyroTurnDegreesRel(180);
+	if(redSide){
+		gyroTurnDegreesRel(160.43494);
+	}
+	else{
+		gyroTurnDegreesRel(-160.43494);
+	}
 	wait1Msec(500);
-	driveInches(-12);
+	driveInches(-30);
+	driveInches(-6, 30);
 	wait1Msec(500);
 	faceNet();
+	autonomousShoot();
 	//driveInches(-12);
 	//turnDegrees(-90);
 	/**
