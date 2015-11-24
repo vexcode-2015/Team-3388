@@ -30,49 +30,48 @@
 #pragma userControlDuration(105)
 #include "Vex_Competition_Includes.c"
 
-fw_motors fly;
-	DriveBase dr;
+Fw_Controller fly;
+DriveBase dr;
 int autoNum = 0;
 void pre_auton()
 {
-	printBatteryToLCD();
 	bStopTasksBetweenModes = false;
-
-
-	dr.fl = mDrFl; dr.fr = mDrFr;
-	dr.bl = mDrBl;	dr.br = mDrBr;
-	dr.ml = mDrMl;
-	dr.mr = mDrMr;
-	dr.gyro = gyroDrive;
-	dr.encLeft = encLeftDr;
-	dr.encRight = encRightDr;
+	dr.fl = mDrFl; dr.fr = mDrFr; dr.bl = mDrBl;	dr.br = mDrBr; dr.ml = mDrMl; dr.mr = mDrMr;
+	dr.gyro = gyroDrive; dr.encLeft = encLeftDr; dr.encRight = encRightDr;
 
 	IntakeInit(mIntake, mIntake2, lfIntake, lfOuter, encIntake);
+	initMecDrive(dr);
 
-
-
-
-initMecDrive(dr);
-	printCalibratingGyro();
-	enableGyro();
 	fly.f1 = mFly1; fly.f2 = mFly2;
 	fly.enc = encFlywheel;
 	autoNum = 0;
 	//autoNum = readAutoNum();
+	if (!(nVexRCReceiveState & vrDisabled)) {
+		break;
+	}
+	
+	printCalibratingGyro();
+	wait1Msec(1500)
+	enableGyro();
+	wait1Msec(3000);
+	while((nVexRCReceiveState & vrDisabled)){
+		printBatteryToLCD();
+	}
 }
 
 task autonomous()
 {
-	printCalibratingGyro();
-	enableGyro();
-	wait1Msec(3000);
+	//startTask(Track, 8);
 	GyroResetAngle();
-
-
-	//driveInches(-12);
-
+	fw_fullCourtSpeed();
+	wait1Msec(2500);
+	autonomousShoot();
+	wait1Msec(700);
 	gyroTurnDegreesRel(180);
-
+	wait1Msec(500);
+	driveInches(-12);
+	wait1Msec(500);
+	faceNet();
 	//driveInches(-12);
 	//turnDegrees(-90);
 	/**
@@ -147,6 +146,7 @@ task usercontrol()
 	initFlyWheel(fly);
 	initMecDrive(dr);
 	startTask(intakeControl, 3);
+
 	while(true)
 	{
 	//	_mecDrive();
@@ -159,7 +159,7 @@ task usercontrol()
 	//printPIDDebug(_fly.flyPID);
 	//writeDebugStreamLine("%f", motor[mFly1]);
 	printPIDDebug(mec.master);
-	writeDebugStreamLine("%f", ballCount);
+	writeDebugStreamLine("%f", __intakeController.ballCount);
 //	writeDebugStreamLine("%f : %f", curr, motor[mFly1]);
 
 //	writeDebugStreamLine("%d", motor[mFly1]);
@@ -167,7 +167,7 @@ task usercontrol()
 	//writeDebugStreamLine("%f",motor[_fly.f1]);
 
 		//	writeDebugStreamLine("%f, %f  %f",error, nAvgBatteryLevel, Y);
-		//writeDebugStreamLine("curr %f, set %f", FwCalculateSpeed(), _setRPM);
+		//writeDebugStreamLine("_fly.currSpeed%f, set %f", FwCalculateSpeed(), _setRPM);
 		wait1Msec(50);
 	}
 }

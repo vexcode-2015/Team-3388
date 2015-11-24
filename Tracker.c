@@ -9,7 +9,7 @@
 	float netDistance;
 	tSensors leftEnc;
 	tSensors rightEnc;
-} ;
+};
 
 Position _RobotPos;
 float GetRobotX(){
@@ -20,17 +20,26 @@ float GetRobotY(){
 
 }
 
+float netX = 0;
+float netY = 434.45 * TICKS_PER_CENTIMETERS;
+
 void setNetDistance(float netX, float netY, float currX, float currY){
 	float dY = netY - currY;
 	float dX = netX - currX;
 	_RobotPos.netDistance = sqrt(dY * dY + dX * dX);
 }
 
-float getNetDistance(){
-	return _RobotPos.netDistance;
+
+float trk_GetNetAngle(){
+	float dY = netY - _RobotPos.y;
+	float dX = netX - _RobotPos.x;
+	return radiansToDegrees(atan(dY/dX));
 }
 
 
+float getNetDistance(){
+	return _RobotPos.netDistance;
+}
 
 task Track()
 {
@@ -43,9 +52,6 @@ task Track()
 	float x = 0;
 	float y = 0;
 
-	float netX = 0;
-	float netY = 400 * TICKS_PER_CENTIMETERS;
-	float speedConstant = MAX_SPEED_MS / 1.80;
 
 	float currentSpeedL;
 	float currentSpeedR;
@@ -62,8 +68,9 @@ task Track()
 		initTicksL = SensorValue[_RobotPos.leftEnc];
 		initTicksR = SensorValue[_RobotPos.rightEnc];
 
-		//x += ((currentSpeedL + currentSpeedR) / 2) * dTime * cosDegrees(GyroGetAngle());
-		//y += ((currentSpeedL + currentSpeedR) / 2) * dTime * sinDegrees(GyroGetAngle());
+		_RobotPos.x += ((currentSpeedL + currentSpeedR) / 2) * dTime * cosDegrees(GyroGetAngle());
+		_RobotPos.y += ((currentSpeedL + currentSpeedR) / 2) * dTime * sinDegrees(GyroGetAngle());
+		wait1Msec(20);
 	}
 }
 #endif
