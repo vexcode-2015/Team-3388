@@ -64,21 +64,21 @@ void incrementBallCount(){
 
 
 void autoIntake(){
-	if(ballAtLift() && __intakeController.ballCount <= 1){
+	if(ballAtLift() && _intakeController.ballCount <= 1){
 			wait1Msec(500);
 			driveIntake(intakeDriveTicks);
-			__intakeController.ballCount++;
+			_intakeController.ballCount++;
 			//motor[_intakeController.outIntake] = 127;
 	}
-	else if((ballAtLift() && (__intakeController.ballCount == 2)) && !ballAtOuter()){
-			__intakeController.ballCount = 3;
+	else if((ballAtLift() && (_intakeController.ballCount == 2)) && !ballAtOuter()){
+			_intakeController.ballCount = 3;
 			//motor[_intakeController.outIntake] = 127;
 	}
-	else if(ballAtLift() && ballAtOuter() && __intakeController.ballCount != 4){
-		__intakeController.ballCount = 4;
+	else if(ballAtLift() && ballAtOuter() && _intakeController.ballCount != 4){
+		_intakeController.ballCount = 4;
 	}
 
-	if(__intakeController.ballCount == 4){
+	if(_intakeController.ballCount == 4){
 		motor[_intakeController.outIntake] = 0;
 	}
 	else{
@@ -89,25 +89,14 @@ void autoIntake(){
 
 void autoShoot(){
 	motor[_intakeController.outIntake] = 127;
-	for(int i = 0; i<__intakeController.ballCount; i++){
+	for(int i = 0; i<_intakeController.ballCount; i++){
 		driveIntake(intakeDriveTicks);
 		wait1Msec(shootDelay);
 	}
-	__intakeController.ballCount = 0;
+	_intakeController.ballCount = 0;
 }
 
-void autonomousShoot(){
-	StopTask(intakeControl);
-	driveIntake();
-	wait1Msec(shootDelay);
-	driveIntake();
-	wait1Msec(shootDelay);
-	driveIntake();
-	wait1Msec(shootDelay);
-	driveIntake();
-	wait1Msec(shootDelay);
-	StartTask(intakeControl);
-}
+
 
 task intakeControl(){
 	long initTime = nSysTime;
@@ -115,20 +104,22 @@ task intakeControl(){
 	while(true){
 		autoIntake();
 
-		//autoshooter 
+		//autoshooter
 		if(vexRT[Btn7L] == 1){
 			//empty everything
 			autoShoot();
-		}	
+		}
 
 		if(vexRT[Btn5D] == 1){
+			while(true){
 			//override in case of a jam
-			__intakeController.ballCount = 0;
+			_intakeController.ballCount = 0;
 			motor[_intakeController.liftIntake] = 127;
 			motor[_intakeController.outIntake] = 127;
-			while(vexRT[Btn5D] == 1){
+			//while(vexRT[Btn5D] == 1){
 				wait1Msec(50);
-			}
+		//	}
+		}
 		}
 		else if(vexRT[Btn5U] == 1){
 			if(outToggle == 1){
@@ -144,17 +135,17 @@ task intakeControl(){
 			}
 		}
 		else if(vexRT[Btn6D] == 1){
-			__intakeController.ballCount = 0;
+			_intakeController.ballCount = 0;
 			//override
 			driveIntake(intakeDriveTicks);
 		}
 		else if(vexRT[Btn6U] == 1){
-			__intakeController.ballCount = 0;
+			_intakeController.ballCount = 0;
 			//override
 			driveIntake(-intakeDriveTicks);
 		}
 		else if(vexRT[Btn7U] == 1){
-			__intakeController.ballCount = 0;
+			_intakeController.ballCount = 0;
 			//override
 			motor[_intakeController.liftIntake] = -127;
 			motor[_intakeController.outIntake] = -127;
@@ -162,7 +153,7 @@ task intakeControl(){
 		else{
 			motor[_intakeController.liftIntake] = 0;
 			//	writeDebugStreamLine("%f", outToggle);
-			if(outToggle == 1 && __intakeController.ballCount != 4){
+			if(outToggle == 1 && _intakeController.ballCount != 4){
 				motor[_intakeController.outIntake] = 127;
 			}
 			else{
@@ -170,10 +161,25 @@ task intakeControl(){
 			}
 		}
 		while(vexRT[Btn7D] == 1){
+
 			driveIntake(intakeDriveTicks);
+
 			wait1Msec(shootDelay);
 		}
 		wait1Msec(20);
 	}
+}
+
+void autonomousShoot(){
+	StopTask(intakeControl);
+	driveIntake();
+	wait1Msec(shootDelay);
+	driveIntake();
+	wait1Msec(shootDelay);
+	driveIntake();
+	wait1Msec(shootDelay);
+	driveIntake();
+	wait1Msec(shootDelay);
+	StartTask(intakeControl);
 }
 #endif

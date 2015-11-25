@@ -2,7 +2,7 @@
 #ifndef FlyControl.c
 #define FlyControl.c
 
-#define FW_LOOP_SPEED	30
+#define FW_LOOP_SPEED	20
 
 
 #include "Utils.c"
@@ -100,8 +100,8 @@ void _updateFlyWheel(int power){
 
 
 long	nSysTime_last;
-long	encoder_counts;					
-long	encoder_counts_last;		
+long	encoder_counts;
+long	encoder_counts_last;
 float FwCalculateSpeed()
 {
 	int			delta_ms;
@@ -154,22 +154,44 @@ void fw_fullCourtSpeed(){
 
 task PIDFlyControl(){
 	pidReset(_fly.flyPID);
-	pidInit(_fly.flyPID, 0.05, 0, 0.006, 100, 9999);
+	pidInit(_fly.flyPID, 0.05, 0, 0.003, 100, 9999);
+	//pidInit(_fly.flyPID, 0.05, 0, 0.006, 100, 9999);
+	//pidInit(_fly.flyPID, 0.1, 0, 0.006, 9999, 9999);
+	float lastRpm1 = 0;
+	float lastRpm2 = 0;
+	float lastRpm3 = 0;
+	float lastRpm4 = 0;
+
 	float output = 0;
+	float initTime = nPgmTime;
 	while(true){
 		fw_ButtonControl();
-		_fly.currSpeed = FwCalculateSpeed();
+
+		lastRpm4 = lastRpm3;
+		lastRpm3 = lastRpm2;
+		lastRpm2 = lastRpm1;
+		lastRpm1 = FwCalculateSpeed();
+
+		//float rpmAvg = (lastRpm4 * 1 + lastRpm3 * 2 + lastRpm2 * 8 + lastRpm1 * 16)/27;
+	//	writeDebugStreamLine("rpmAvg %f", rpmAvg);
+		_fly.currSpeed = lastRpm1 ;
 		float outVal = pidExecute(_fly.flyPID, _fly.setPoint - _fly.currSpeed);
-	
+		float dTime = nPgmTime - initTime;
+		initTime = nPgmTime;
+
 		//filter output
-		output += (outVal);
+		float coeff = dTime/FW_LOOP_SPEED;
+		if(coeff < 1){
+			coeff = 1;
+		}
+		output += (outVal) * (coeff);
 		if(output < 0){
 			output = 0;
 		}
 		if(output > 127){
 			output = 127;
 		}
-
+		//writeDebugStreamLine("%f", output);
 		_updateFlyWheel(output);
 		delay(FW_LOOP_SPEED);
 	}
@@ -181,7 +203,7 @@ void initFlyWheel(Fw_Controller* initMotors){
 	_fly.f1 = initMotors->f1;
 	_fly.f2 = initMotors->f2;
 	_fly.enc = initMotors->enc;
-	pidInit(_fly.flyPID, 0.05, 0, 0.006, 100, 9999);
+	pidInit(_fly.flyPID, 0.3, 0, 0.001, 100, 9999);
 	//writeDebugStreamLine("FLY %d %d %d %d", _fly.f1,_fly.f2, _fly.f3, _fly.f4);
 	//startTask(FlyWheelControl);
 	startTask(PIDFlyControl, 20);

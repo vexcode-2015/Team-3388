@@ -1,6 +1,6 @@
 #pragma config(UART_Usage, UART1, uartVEXLCD, baudRate19200, IOPins, None, None)
 #pragma config(UART_Usage, UART2, uartNotUsed, baudRate4800, IOPins, None, None)
-#pragma config(Sensor, in1,    gyroDrive,      sensorNone)
+#pragma config(Sensor, in2,    gyroDrive,      sensorNone)
 #pragma config(Sensor, in3,    lfIntake,       sensorLineFollower)
 #pragma config(Sensor, in4,    lfOuter,        sensorLineFollower)
 #pragma config(Sensor, dgtl1,  encLeftDr,      sensorQuadEncoder)
@@ -35,7 +35,7 @@ DriveBase dr;
 int autoNum = 0;
 void pre_auton()
 {
-	bStopTasksBetweenModes = false;
+	bStopTasksBetweenModes = true;
 	dr.fl = mDrFl; dr.fr = mDrFr; dr.bl = mDrBl;	dr.br = mDrBr; dr.ml = mDrMl; dr.mr = mDrMr;
 	dr.gyro = gyroDrive; dr.encLeft = encLeftDr; dr.encRight = encRightDr;
 
@@ -49,18 +49,18 @@ void pre_auton()
 	if (!(nVexRCReceiveState & vrDisabled)) {
 		break;
 	}
-	
+
 	printCalibratingGyro();
 	wait1Msec(1500)
 	enableGyro();
 	wait1Msec(3000);
 
-	bool redSide = true;
 
 	while((nVexRCReceiveState & vrDisabled)){
 		printBatteryToLCD();
 	}
 }
+	bool redSide = true;
 
 task autonomous()
 {
@@ -68,19 +68,25 @@ task autonomous()
 	GyroResetAngle();
 	fw_fullCourtSpeed();
 	wait1Msec(2500);
-	autonomousShoot();
-	wait1Msec(700);
+	//autonomousShoot();
+	//wait1Msec(700);
 	if(redSide){
-		gyroTurnDegreesRel(160.43494);
+		gyroTurnDegreesRel(180);
 	}
-	else{
-		gyroTurnDegreesRel(-160.43494);
-	}
+	//else{
+	//	gyroTurnDegreesRel(-180.43494);
+	//}
+	startTask(intakeControl, 7);
 	wait1Msec(500);
-	driveInches(-30);
-	driveInches(-6, 30);
+	driveInches(-10,50);
 	wait1Msec(500);
-	faceNet();
+	driveInches(-20,30);
+	//driveInches(-6, 30);
+	wait1Msec(500);
+	gyroTurnDegreesRel(180);
+	driveInches(10);
+	wait1Msec(800);
+
 	autonomousShoot();
 	//driveInches(-12);
 	//turnDegrees(-90);
@@ -111,33 +117,6 @@ task autonomous()
 }
 
 
-//calibrate
-void calibrate(){
-	coeff = 0;
-	for(int i = 1; i<100; i++){
-		coeff = 0.001 + 0.0002 * i;
-		writeDebugStreamLine("Testing Coeff %f", coeff);
-		setFlyWheel(LONG_RPM,LONG_PRED);
-		long pTime = nSysTime;
-		long nTime = nSysTime;
-		while(abs(pTime - nSysTime) < 4000){
-			if(abs(error) > 100){
-				long sTime = nSysTime;
-				while(abs(error) > 10 && (abs(pTime - nSysTime) < 4000)){
-					wait1Msec(50);
-				}
-				writeDebugStreamLine("%f, coeff %f  %f SETTLE TIME %f",error, coeff, Y, nSysTime - sTime);
-			}
-		}
-		setFlyWheel(0,0);
-		while(abs(error) > 10){
-				//writeDebugStreamLine("zeroing");
-			wait1Msec(500);
-		}
-	}
-}
-
-
 void driveTesting(){
 		if(vexRT[Btn7D] == 1){
 			printDriveEncoders();
@@ -155,7 +134,7 @@ task usercontrol()
 	GyroResetAngle();
 	initFlyWheel(fly);
 	initMecDrive(dr);
-	startTask(intakeControl, 3);
+
 
 	while(true)
 	{
@@ -164,12 +143,14 @@ task usercontrol()
 
 	//	writeDebugStreamLine("%f", _fly.flyPID.kP);
 
-		//writeDebugStreamLine("%f, coeff %f  %f SETTLE TIME %f", curr, coeff, Y, nSysTime);
+		//writeDebugStreamLine("%f, \coeff %f  %f SETTLE TIME %f", curr, coeff, Y, nSysTime);
 		//writeDebugStreamLine("%f", GyroGetAngle());
 	//printPIDDebug(_fly.flyPID);
+	printPIDDebug(mec.slave);
+	//writeDebugStreamLine("GYRO ANGLE : %f", GyroGetAngle());
 	//writeDebugStreamLine("%f", motor[mFly1]);
-	printPIDDebug(mec.master);
-	writeDebugStreamLine("%f", __intakeController.ballCount);
+//	printPIDDebug(mec.master);
+//	writeDebugStreamLine("%f", _intakeController.ballCount);
 //	writeDebugStreamLine("%f : %f", curr, motor[mFly1]);
 
 //	writeDebugStreamLine("%d", motor[mFly1]);
