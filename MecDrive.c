@@ -9,13 +9,7 @@
 #include "Tracker.c"
 #include "Constants.h"
 
-//constants
-
-//ticks per centimeter = 2 pi (r = 4 * 2.54 cm) / 360*
-
-
 const float LEFT_RIGHT_OFFSET = 1;
-
 
 typedef struct {
 	tMotor fl;
@@ -37,7 +31,7 @@ typedef struct {
 
 DriveBase mec;
 
-//zero's drive encoders
+//zero drive encoders
 void zeroDriveEncoders(){
 	SensorValue[mec.encLeft] = 0;
 	SensorValue[mec.encRight] = 0;
@@ -66,9 +60,9 @@ void _setRightDrivePow(int power){
 		motor[mec.mr] = 0;
 		return;
 	}
-	motor[mec.fr] = power ;
-	motor[mec.br] = power ;
-	motor[mec.mr] = power ;
+	motor[mec.fr] = power;
+	motor[mec.br] = power;
+	motor[mec.mr] = power;
 	//setLinMotorPow(mec.br,power);
 	//setLinMotorPow(mec.fr,power);
 	//setLinMotorPow(mec.mr,power);
@@ -111,49 +105,40 @@ void turnDegrees(int degrees){
 }
 
 
-void gyroTurnDegreesAbs(int degrees){
+void mec_GyroTurnAbs(int degrees){
 	pidInit(mec.slave, 	0.2,0,0,0,1270);
 	mec.pidEnabled = false;
 	degrees = degrees % 360;
-	zeroDriveEncoders();
+	//this might break things 
+	//zeroDriveEncoders();
 	bool targetReached = false;
 	int setPoint = degrees;
+	
 	long timeInit = nPgmTime;
 	long atTargetTime = nPgmTime;
+	
 	int errorThreshold = 2; //tolerance of 2 degrees
-	zeroDriveEncoders();
-	float initTicksL = 0;
-	float initTicksR = 0;
-	initTicksL = SensorValue[mec.encLeft];
-	initTicksR = SensorValue[mec.encRight];
+	
+	float initTicksL = initTicksL = SensorValue[mec.encLeft];
+	float initTicksR = SensorValue[mec.encRight];
+	
 	while(!targetReached){
 		//left encoder is master
-		printPIDDebug(mec.gyroPID);
+		
 		float error = setPoint - GyroGetAngle();
 		if(abs(error) > abs(setPoint - (GyroGetAngle() + 360))){
 				error = setPoint - (GyroGetAngle() + 360);
 		}
 		float slaveErr = (-(SensorValue[mec.encLeft] - initTicksL)) + (SensorValue[mec.encRight] - initTicksR);
-		float driveOut = pidExecute(mec.gyroPID,error)
 		float slaveOut = pidExecute(mec.slave, slaveErr);
+		float driveOut = pidExecute(mec.gyroPID,error);
 		//we need to add a special case in case driveOut is saturated
-		if(abs(driveOut + slaveOut) > 127){
-			//we are saturated adjust both outputs
-			float n = abs(driveOut + slaveOut) / 120;
-			driveOut = driveOut / n;
-			slaveOut = slaveOut / n;
-		}
-		if(abs(driveOut) > 60){
-			driveOut = 60 * (driveOut/abs(driveOut));
-		}
-		else if((abs(driveOut) < 24 && driveOut != 0) && abs(error) > 1){
-			if(driveOut != 0){
-				driveOut = 20 * (driveOut/abs(driveOut));
-			}
-		}
-		if(abs(error) < 1){
-			mec.gyroPID.errorSum = 0;
-		}
+	//	if(abs(driveOut + slaveOut) > 127){
+	/		//we are saturated adjust both outputs
+	//		float n = abs(driveOut + slaveOut) / 120;
+	//		driveOut = driveOut / n;
+	//		slaveOut = slaveOut / n;
+	//	}
 		_setLeftDrivePow(driveOut + slaveOut);
 		_setRightDrivePow(-(driveOut - slaveOut));
 		printPIDDebug(mec.slave);
@@ -171,8 +156,8 @@ void gyroTurnDegreesAbs(int degrees){
 }
 
 
-void gyroTurnDegreesRel(int degrees){
-	gyroTurnDegreesAbs(GyroGetAngle() + degrees);
+void mec_GyroTurnRel(int degrees){
+	mec_GyroTurnAbs(GyroGetAngle() + degrees);
 }
 
 void enableGyro(){
@@ -198,9 +183,7 @@ void driveInches(float inches, int maxSpeed){
 		//left encoder is master
 		float error = setPoint - (SensorValue[mec.encLeft] - initDriveL);
 		float slaveErr = (SensorValue[mec.encLeft] - initDriveL) + (SensorValue[mec.encRight] - initDriveR);
-		if(abs(mec.master.error) > 100){
-				mec.master.errorSum = 0;
-		}
+
 		if(sgn(mec.master.error) != sgn(mec.master.errorSum)){
 				mec.master.errorSum = 0;
 		}
@@ -220,11 +203,8 @@ void driveInches(float inches, int maxSpeed){
 		if(abs(driveOut) > maxSpeed){
 			driveOut = maxSpeed * (driveOut/abs(driveOut));
 		}
-		if(abs(driveOut) < 15 && driveOut != 0){
-			driveOut = 15 * driveOut/abs(driveOut);
-		}
 		_setLeftDrivePow(driveOut - slaveOut);
-		_setRightDrivePow((driveOut + slaveOut));
+		_setRightDrivePow(driveOut + slaveOut);
 
 		if(abs(error) > errorThreshold){
 			atTargetTime = nPgmTime;
