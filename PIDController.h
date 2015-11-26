@@ -19,6 +19,20 @@ void printPIDDebug(PID &pid){
 		 pid.error, pid.errorSum, pid.output, pid.lastOutput);
 }
 
+//time to report in seconds, interval in ms
+void printPIDGraph(int timeToReport, int intervalMS, float &setpoint){
+	writeDebugStreamLine("kP: %f \tkI: %f \tkD: %f", pid.kP, pid.kI, pid.kD);
+	writeDebugStreamLine("SETPOINT \t POSITION ");
+	long initTime = nPgmTime;
+	while(abs(initTime) - nPgmTime < timeToReport * 1000){
+		writeDebugStreamLine("%f \t %f", pid.error, setpoint);
+	}
+}
+
+void printPIDGraph(int timeToReport){
+	printPIDGraph(timeToReport, 20)
+}
+
 
 void pidInit(PID &pid, float kP, float kI, float kD, float epsilon, float slewRate){
 	pid.kP = kP;
@@ -26,7 +40,6 @@ void pidInit(PID &pid, float kP, float kI, float kD, float epsilon, float slewRa
 	pid.kD = kD;
 	pid.epsilon = epsilon;
 	pid.slewRate = slewRate;
-
 }
 
 float pidFilteredOutput(PID &pid){
