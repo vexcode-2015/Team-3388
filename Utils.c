@@ -1,6 +1,7 @@
 #ifndef Utils.c
 #define Utils.c
 
+#include ""
 #include "SmartMotorLib.c"
 
 const unsigned int _MotorMap[128] =
@@ -128,4 +129,14 @@ int readAutoNum(){
 		}
 	}
 }
+
+task utl_DebugHelperTask(){
+	whiel(true){
+		
+		wait1Msec(30);
+	}
+}
+
+
+
 #endif
