@@ -1,4 +1,3 @@
-
 #ifndef MecDrive.c
 #define MecDrive.c
 #define JOYSTICK_DEADZONE  10
@@ -10,7 +9,7 @@
 #include "Constants.h"
 
 const float LEFT_RIGHT_OFFSET = 1;
-
+const float AUTO_MAX_POW = 80;
 typedef struct {
 	tMotor fl;
 	tMotor fr;
@@ -68,44 +67,8 @@ void _setRightDrivePow(int power){
 	//setLinMotorPow(mec.mr,power);
 }
 
-void turnDegrees(int degrees){
-	zeroDriveEncoders();
-	bool targetReached = false;
-	float setPoint = degrees * TICKS_PER_DEGREE;
-	long timeInit = nPgmTime;
-	long atTargetTime = nPgmTime;
-	int errorThreshold = 2 * TICKS_PER_DEGREE; //tolerance of 2 degrees
-	zeroDriveEncoders();
-	while(!targetReached){
-		//left encoder is master
-		float error = setPoint - mec.encLeft;
-		float slaveErr = mec.encLeft - abs(mec.encRight);
-
-		float driveOut = pidExecute(mec.master,error)
-		float slaveOut = pidExecute(mec.slave, slaveErr);
-		//we need to add a special case in case driveOut + slaveOut is saturated
-		//the important part is to keep the ratio's the same.
-		if(abs(driveOut + slaveOut) > 127){
-			float n = abs(driveOut + slaveOut) / 120;
-			driveOut = driveOut / n;
-			slaveOut = slaveOut / n;
-		}
-		_setLeftDrivePow(driveOut);
-		_setRightDrivePow(-(driveOut + slaveOut));
-		if(abs(error) > errorThreshold){
-			atTargetTime = nPgmTime;
-		}
-		if(nPgmTime - atTargetTime > 350){
-			targetReached = true;
-			_setLeftDrivePow(0);
-			_setRightDrivePow(0);
-			break;
-		}
-	}
-}
-
-
 void mec_GyroTurnAbs(int degrees){
+	pidInit(mec.gyroPID, 0.7333,0,0.02,1,1270);
 	pidInit(mec.slave, 	0.2,0,0,0,1270);
 	mec.pidEnabled = false;
 	degrees = degrees % 360;
@@ -122,6 +85,9 @@ void mec_GyroTurnAbs(int degrees){
 	float initTicksL = initTicksL = SensorValue[mec.encLeft];
 	float initTicksR = SensorValue[mec.encRight];
 	
+	int integralLimit = 40 * mec.gyroPID.kI;
+	
+	
 	while(!targetReached){
 		//left encoder is master
 		
@@ -132,9 +98,18 @@ void mec_GyroTurnAbs(int degrees){
 		float slaveErr = (-(SensorValue[mec.encLeft] - initTicksL)) + (SensorValue[mec.encRight] - initTicksR);
 		float slaveOut = pidExecute(mec.slave, slaveErr);
 		float driveOut = pidExecute(mec.gyroPID,error);
+		
+		if(sgn(mec.gyroPID.error) != sgn(mec.gyroPID.lastError)){
+			mec.gyroPID.errorSum = 0;
+		}		
+		
+		if(abs(mec.gyroPID.errorSum) > integralLimit){
+			mec.gyroPID.errorSum = integralLimit * mec.gyroPID.errorSum/abs(mec.gyroPID.errorSum);
+		}
+		
 		//we need to add a special case in case driveOut is saturated
 	//	if(abs(driveOut + slaveOut) > 127){
-	/		//we are saturated adjust both outputs
+	// 		//we are saturated adjust both outputs
 	//		float n = abs(driveOut + slaveOut) / 120;
 	//		driveOut = driveOut / n;
 	//		slaveOut = slaveOut / n;
@@ -168,10 +143,18 @@ void enableGyro(){
 
 
 void driveInches(float inches, int maxSpeed){
-	zeroDriveEncoders();
+	//def constants
+	pidInit(mec.master, 0.18,0,0.02,0,1270);
 	pidInit(mec.slave, 0.6,0,0.1,0,1270);
+	pid_Reset(mec.master);
+	pid_Reset(mec.slave);
+	
+	int integralLimit = 40 * mec.master.ki;
+	
+	//turn off pid task 
 	mec.pidEnabled = false;
 	bool targetReached = false;
+	
 	float setPoint = inches * TICKS_PER_INCHES;
 	long timeInit = nPgmTime;
 	long atTargetTime = nPgmTime;
@@ -183,23 +166,18 @@ void driveInches(float inches, int maxSpeed){
 		//left encoder is master
 		float error = setPoint - (SensorValue[mec.encLeft] - initDriveL);
 		float slaveErr = (SensorValue[mec.encLeft] - initDriveL) + (SensorValue[mec.encRight] - initDriveR);
-
+		
 		if(sgn(mec.master.error) != sgn(mec.master.errorSum)){
 				mec.master.errorSum = 0;
+		}
+		if(abs(mec.master.errorSum) > integralLimit){
+			mec.master.errorSum = mec.master.errorSum > 0 ?  integralLimit : -integralLimit;
 		}
 		float driveOut = pidExecute(mec.master,error);
 		printPIDDebug(mec.master);
 		float slaveOut = pidExecute(mec.slave, slaveErr);
 
 		//we need to add a special case in case driveOut is saturated
-		/**
-		if(abs(driveOut + slaveOut) > 127){
-			//we are saturated adjust both outputs
-			float n = abs(driveOut + slaveOut) / 120;
-			driveOut = driveOut / n;
-			slaveOut = slaveOut / n;
-		}
-		**/
 		if(abs(driveOut) > maxSpeed){
 			driveOut = maxSpeed * (driveOut/abs(driveOut));
 		}
@@ -220,7 +198,7 @@ void driveInches(float inches, int maxSpeed){
 }
 
 void driveInches(float inches){
-	driveInches(inches,127);
+	driveInches(inches,70);
 }
 
 
@@ -308,11 +286,6 @@ task _PIDmecDrive(){
 	}
 }
 
-
-void engagePIDDrive(){
-	startTask(_PIDmecDrive, 9);
-}
-
 void initMecDrive(DriveBase db){
 	mec.fl = db.fl;
 	mec.fr = db.fr;
@@ -330,10 +303,14 @@ void initMecDrive(DriveBase db){
 	//	startTask(_mecDrive);
 	//PID, kp, ki, kd, epsilon, slew)
 	//may want to tweak these for teleop
-	pidInit(mec.master, 0.18,0,0.02,0,1270);//pidInit(mec.master, 	1.4111,0 ,0,0,1270);
-	pidInit(mec.gyroPID, 0.7333,0,0.02,1,1270);
-	engagePIDDrive();
+	//pidInit(mec.master, 	1.4111,0 ,0,0,1270);
+
 }
+
+void mec_StartTeleop(){
+	startTask(_PIDmecDrive, 9);
+}
+
 
 void stopPIDDrive(){
 	stopTask(_PIDmecDrive);
