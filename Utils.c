@@ -1,9 +1,6 @@
 #ifndef Utils.c
 #define Utils.c
 
-#include ""
-#include "SmartMotorLib.c"
-
 const unsigned int _MotorMap[128] =
 {
 	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,
@@ -53,9 +50,6 @@ void setLinMotorPow(tMotor index, int power, int deadzone){
 	motor[index] = threshold(power > 0 ? _MotorMap[abs(power)] : -1 * _MotorMap[abs(power)], deadzone);
 }
 
-void setSmartPow(tMotor index, int power){
-	SetMotor(index,power > 0 ? _MotorMap[power] : -1 * _MotorMap[power]);
-}
 
 void statusLightSet(int status){
 	SensorValue[lightIndex] = status;
@@ -131,8 +125,8 @@ int readAutoNum(){
 }
 
 task utl_DebugHelperTask(){
-	whiel(true){
-		
+	while(true){
+
 		wait1Msec(30);
 	}
 }

@@ -2,7 +2,7 @@
 #define IntakeControl.c
 
 
-const int shootDelay = 200;
+const int shootDelay = 400;
 
  typedef struct IntakeController{
 	 tMotor liftIntake;
@@ -15,7 +15,7 @@ const int shootDelay = 200;
 
 
 IntakeController _intakeController;
-const int intakeDriveTicks = 400;
+const int intakeDriveTicks = 380;
 void driveIntake(int ticks){
 	int dTicks = 0;
 	int iTicks = -SensorValue[ _intakeController.enc ];
@@ -111,15 +111,15 @@ task intakeControl(){
 		}
 
 		if(vexRT[Btn5D] == 1){
-			while(true){
+
 			//override in case of a jam
 			_intakeController.ballCount = 0;
 			motor[_intakeController.liftIntake] = 127;
 			motor[_intakeController.outIntake] = 127;
-			//while(vexRT[Btn5D] == 1){
+			while(vexRT[Btn5D] == 1){
 				wait1Msec(50);
-		//	}
-		}
+			}
+
 		}
 		else if(vexRT[Btn5U] == 1){
 			if(outToggle == 1){
@@ -149,6 +149,9 @@ task intakeControl(){
 			//override
 			motor[_intakeController.liftIntake] = -127;
 			motor[_intakeController.outIntake] = -127;
+			while(vexRT[Btn7U] == 1){
+				wait1Msec(50);
+			}
 		}
 		else{
 			motor[_intakeController.liftIntake] = 0;
@@ -163,7 +166,7 @@ task intakeControl(){
 		while(vexRT[Btn7D] == 1){
 
 			driveIntake(intakeDriveTicks);
-
+			_intakeController.ballCount = 0;
 			wait1Msec(shootDelay);
 		}
 		wait1Msec(20);

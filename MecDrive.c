@@ -3,7 +3,6 @@
 #define JOYSTICK_DEADZONE  10
 #include "Utils.c"
 #include "PIDController.h"
-#include "SmartMotorLib.c"
 #include "GyroLib.c"
 #include "Tracker.c"
 #include "Constants.h"
@@ -68,29 +67,29 @@ void _setRightDrivePow(int power){
 }
 
 void mec_GyroTurnAbs(int degrees){
-	pidInit(mec.gyroPID, 0.7333,0,0.02,1,1270);
+	pidInit(mec.gyroPID, 0.7333,0.2,0.1,1,1270);
 	pidInit(mec.slave, 	0.2,0,0,0,1270);
 	mec.pidEnabled = false;
 	degrees = degrees % 360;
-	//this might break things 
+	//this might break things
 	//zeroDriveEncoders();
 	bool targetReached = false;
 	int setPoint = degrees;
-	
+
 	long timeInit = nPgmTime;
 	long atTargetTime = nPgmTime;
-	
+
 	int errorThreshold = 2; //tolerance of 2 degrees
-	
-	float initTicksL = initTicksL = SensorValue[mec.encLeft];
+
+	float initTicksL = SensorValue[mec.encLeft];
 	float initTicksR = SensorValue[mec.encRight];
-	
-	int integralLimit = 40 * mec.gyroPID.kI;
-	
-	
+
+	int integralLimit = 40 / mec.gyroPID.kI;
+
+
 	while(!targetReached){
 		//left encoder is master
-		
+
 		float error = setPoint - GyroGetAngle();
 		if(abs(error) > abs(setPoint - (GyroGetAngle() + 360))){
 				error = setPoint - (GyroGetAngle() + 360);
@@ -98,15 +97,15 @@ void mec_GyroTurnAbs(int degrees){
 		float slaveErr = (-(SensorValue[mec.encLeft] - initTicksL)) + (SensorValue[mec.encRight] - initTicksR);
 		float slaveOut = pidExecute(mec.slave, slaveErr);
 		float driveOut = pidExecute(mec.gyroPID,error);
-		
+
 		if(sgn(mec.gyroPID.error) != sgn(mec.gyroPID.lastError)){
 			mec.gyroPID.errorSum = 0;
-		}		
-		
+		}
+
 		if(abs(mec.gyroPID.errorSum) > integralLimit){
 			mec.gyroPID.errorSum = integralLimit * mec.gyroPID.errorSum/abs(mec.gyroPID.errorSum);
 		}
-		
+
 		//we need to add a special case in case driveOut is saturated
 	//	if(abs(driveOut + slaveOut) > 127){
 	// 		//we are saturated adjust both outputs
@@ -144,17 +143,17 @@ void enableGyro(){
 
 void driveInches(float inches, int maxSpeed){
 	//def constants
-	pidInit(mec.master, 0.18,0,0.02,0,1270);
+	pidInit(mec.master, 0.18,0.2,0.02,0,1270);
 	pidInit(mec.slave, 0.6,0,0.1,0,1270);
-	pid_Reset(mec.master);
-	pid_Reset(mec.slave);
-	
-	int integralLimit = 40 * mec.master.ki;
-	
-	//turn off pid task 
+	pidReset(mec.master);
+	pidReset(mec.slave);
+
+	int integralLimit = 40 / mec.master.ki;
+
+	//turn off pid task
 	mec.pidEnabled = false;
 	bool targetReached = false;
-	
+
 	float setPoint = inches * TICKS_PER_INCHES;
 	long timeInit = nPgmTime;
 	long atTargetTime = nPgmTime;
@@ -166,7 +165,7 @@ void driveInches(float inches, int maxSpeed){
 		//left encoder is master
 		float error = setPoint - (SensorValue[mec.encLeft] - initDriveL);
 		float slaveErr = (SensorValue[mec.encLeft] - initDriveL) + (SensorValue[mec.encRight] - initDriveR);
-		
+
 		if(sgn(mec.master.error) != sgn(mec.master.errorSum)){
 				mec.master.errorSum = 0;
 		}
@@ -239,14 +238,19 @@ void _mecDrive(){
 		int oldSign = x1;
 		if(x1!=0){
 
-			x1 = ((x1 * x1 * x1/(abs(x1)) / (127)) / 2;
+			x1 = ((x1 * x1 * x1/abs(x1)) / (127)) / 2;
+
 			if(abs(y2) > 80){
 				x1 = oldSign > 0 ? x1 + 55 : x1 - 55;
 			}
 			else{
 				x1 = oldSign > 0 ? x1 + 25 : x1 - 25;
 			}
+
+			if(abs(y1) > 100){
+				x1 += y1 > 0 ? 25 : -25;
 			}
+		}
 		float leftOut = y2 + x1;
 		float rightOut = y2 - x1;
 		// if(abs(leftOut) > 127){

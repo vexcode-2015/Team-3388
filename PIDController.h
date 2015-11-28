@@ -29,10 +29,6 @@ void printPIDGraph(int timeToReport, int intervalMS, float &setpoint){
 	}
 }
 
-void printPIDGraph(int timeToReport){
-	printPIDGraph(timeToReport, 20)
-}
-
 
 void pidInit(PID &pid, float kP, float kI, float kD, float epsilon, float slewRate){
 	pid.kP = kP;
