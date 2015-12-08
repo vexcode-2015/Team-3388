@@ -9,11 +9,14 @@
 #include "PIDController.h"
 #include "MecDrive.c"
 
-const int SHORT_RPM = 2140;
-const int SHORT_POW = 55;
+
+const int SKILLS_RPM = 2390;
+const int SKILLS_POW = 60;
+const int SHORT_RPM = 1990;
+const int SHORT_POW = 50;
 const int MED_RPM = 2550;
 const int MED_POW = 65;
-const int LONG_RPM  = 3200;
+const int LONG_RPM  = 3100;
 const int HIGH_POW = 79;
 
 
@@ -133,8 +136,19 @@ void spinFlyWheelAuto(){
 void fw_ButtonControl(){
 	//btnControl
 	if(vexRT[Btn8D]){
-		setFlyRpm(0);
-		_fly.pred = 0;
+		if(_fly.pred == 0){
+				setFlyRpm(SKILLS_RPM);
+				_fly.pred = SKILLS_POW;
+			while(vexRT[Btn8D]){
+			}
+		}
+		else{
+			setFlyRpm(0);
+			_fly.pred = 0;
+			while(vexRT[Btn8D]){
+			}
+		}
+
 	}
 	if(vexRT[Btn8L]){
 		setFlyRpm(SHORT_RPM);
@@ -157,6 +171,7 @@ void fw_ButtonControl(){
 
 void fw_fullCourtSpeed(){
 	setFlyRpm(LONG_RPM);
+	_fly.pred = HIGH_POW;
 }
 
 task flw_task_PIDCntrl(){
@@ -208,7 +223,7 @@ task flw_task_PIDCntrl(){
 task flw_tsk_FeedForwardCntrl(){
 	pidReset(_fly.flyPID);
 	//TRY: fairly good fast recovery
-	pidInit(_fly.flyPID, 0.15, 0.03, 0, 100, 9999);
+	pidInit(_fly.flyPID, 0.23, 0.05, 0, 100, 9999);
 
 	//pidInit(_fly.flyPID, 0.15, 0.05, 0, 100, 9999);
 
@@ -243,6 +258,7 @@ task flw_tsk_FeedForwardCntrl(){
 		}
 		//
 		output = _fly.pred + ((outVal) * (coeff));
+
 		if(output < 0){
 			output = 0;
 		}
@@ -254,6 +270,39 @@ task flw_tsk_FeedForwardCntrl(){
 	}
 }
 
+
+task flw_task_bangbang(){
+	while(true){
+
+		fw_ButtonControl();
+		_fly.currSpeed =  FwCalculateSpeed();
+		float error = _fly.setPoint - _fly.currSpeed;
+
+
+		float outVal = 0;
+		if(abs(error) > 200){
+			outVal = error > 0 ? 127 : 50;
+		}
+		else{
+			outVal = error > 0 ? 85 : 65;
+		}
+
+		float output = outVal;
+
+		if(output < 0){
+			output = 0;
+		}
+		if(output > 127){
+			output = 127;
+		}
+		_updateFlyWheel(output);
+		delay(FW_LOOP_SPEED);
+	}
+}
+
+
+
+
 void initFlyWheel(Fw_Controller* initMotors){
 	_fly = *initMotors;
 	_fly.f1 = initMotors->f1;
@@ -261,6 +310,7 @@ void initFlyWheel(Fw_Controller* initMotors){
 	_fly.enc = initMotors->enc;
 	//writeDebugStreamLine("FLY %d %d %d %d", _fly.f1,_fly.f2, _fly.f3, _fly.f4);
 	startTask(flw_tsk_FeedForwardCntrl,20);
+	//startTask(flw_task_bangbang,20);
 	//startTask(flw_task_PIDCntrl, 20);
 }
 

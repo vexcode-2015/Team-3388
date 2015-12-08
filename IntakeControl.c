@@ -1,7 +1,7 @@
 #ifndef IntakeControl.c
 #define IntakeControl.c
 
-
+#include "FlyControl.c"
 const int shootDelay = 400;
 
  typedef struct IntakeController{
@@ -15,7 +15,7 @@ const int shootDelay = 400;
 
 
 IntakeController _intakeController;
-const int intakeDriveTicks = 380;
+const int intakeDriveTicks = 400;
 void driveIntake(int ticks){
 	int dTicks = 0;
 	int iTicks = -SensorValue[ _intakeController.enc ];
@@ -68,18 +68,22 @@ void autoIntake(){
 			wait1Msec(500);
 			driveIntake(intakeDriveTicks);
 			_intakeController.ballCount++;
+			wait1Msec(200);
 			//motor[_intakeController.outIntake] = 127;
 	}
 	else if((ballAtLift() && (_intakeController.ballCount == 2)) && !ballAtOuter()){
 			_intakeController.ballCount = 3;
+			wait1Msec(200);
 			//motor[_intakeController.outIntake] = 127;
 	}
 	else if(ballAtLift() && ballAtOuter() && _intakeController.ballCount != 4){
 		_intakeController.ballCount = 4;
+		wait1Msec(200);
 	}
 
 	if(_intakeController.ballCount == 4){
 		motor[_intakeController.outIntake] = 0;
+		wait1Msec(200);
 	}
 	else{
 		//motor[_intakeController.outIntake] = 127;
@@ -169,20 +173,26 @@ task intakeControl(){
 			_intakeController.ballCount = 0;
 			wait1Msec(shootDelay);
 		}
+			while(vexRT[Btn7R] == 1){
+				if(abs(_fly.flyPID.error) < 150){
+						driveIntake(intakeDriveTicks);
+						_intakeController.ballCount = 0;
+				}
+
+		}
+
 		wait1Msec(20);
 	}
 }
 
 void autonomousShoot(){
-	StopTask(intakeControl);
 	driveIntake();
-	wait1Msec(shootDelay);
+	wait1Msec(900);
 	driveIntake();
-	wait1Msec(shootDelay);
+	wait1Msec(900);
 	driveIntake();
-	wait1Msec(shootDelay);
+	wait1Msec(900);
 	driveIntake();
-	wait1Msec(shootDelay);
-	StartTask(intakeControl);
+	wait1Msec(900);
 }
 #endif

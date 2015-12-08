@@ -67,7 +67,8 @@ void _setRightDrivePow(int power){
 }
 
 void mec_GyroTurnAbs(int degrees){
-	pidInit(mec.gyroPID, 0.7333,0.2,0.1,1,1270);
+	GyroResetAngle();
+	pidInit(mec.gyroPID, 0.9333,1.5,0.2,1,1270);
 	pidInit(mec.slave, 	0.2,0,0,0,1270);
 	mec.pidEnabled = false;
 	degrees = degrees % 360;
@@ -91,8 +92,8 @@ void mec_GyroTurnAbs(int degrees){
 		//left encoder is master
 
 		float error = setPoint - GyroGetAngle();
-		if(abs(error) > abs(setPoint - (GyroGetAngle() + 360))){
-				error = setPoint - (GyroGetAngle() + 360);
+		if(abs(error) > abs((setPoint+360) - (GyroGetAngle()))){
+				error = (setPoint+360) - (GyroGetAngle() );
 		}
 		float slaveErr = (-(SensorValue[mec.encLeft] - initTicksL)) + (SensorValue[mec.encRight] - initTicksR);
 		float slaveOut = pidExecute(mec.slave, slaveErr);
@@ -131,7 +132,13 @@ void mec_GyroTurnAbs(int degrees){
 
 
 void mec_GyroTurnRel(int degrees){
-	mec_GyroTurnAbs(GyroGetAngle() + degrees);
+	if(degrees < 0){
+		degrees += 360;
+	}
+	if(degrees > 360){
+		degrees -= 360;
+	}
+	mec_GyroTurnAbs(degrees);
 }
 
 void enableGyro(){
@@ -143,12 +150,12 @@ void enableGyro(){
 
 void driveInches(float inches, int maxSpeed){
 	//def constants
-	pidInit(mec.master, 0.18,0.2,0.02,0,1270);
-	pidInit(mec.slave, 0.6,0,0.1,0,1270);
+	pidInit(mec.master, 0.5,0.1,0.1,0,1270);
+	pidInit(mec.slave, 0.3,0,0,0,1270);
 	pidReset(mec.master);
 	pidReset(mec.slave);
 
-	int integralLimit = 40 / mec.master.ki;
+	int integralLimit = 30 / mec.master.ki;
 
 	//turn off pid task
 	mec.pidEnabled = false;
@@ -247,12 +254,16 @@ void _mecDrive(){
 				x1 = oldSign > 0 ? x1 + 25 : x1 - 25;
 			}
 
-			if(abs(y1) > 100){
-				x1 += y1 > 0 ? 25 : -25;
+			if(abs(y1) > 60){
+				y1 = y1 > 0 ? 30 : -30;
+				x1 = 0;
+			}
+			else{
+				y1 = 0;
 			}
 		}
-		float leftOut = y2 + x1;
-		float rightOut = y2 - x1;
+		float leftOut = y2 + x1 + y1;
+		float rightOut = y2 - x1 - y1;
 		// if(abs(leftOut) > 127){
 		// 	float n = abs(leftOut) / 120;
 		// 	leftOut = leftOut / n;

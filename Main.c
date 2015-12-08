@@ -67,18 +67,8 @@ task autonomous()
 	GyroResetAngle();
 	initFlyWheel(fly);
 	fw_fullCourtSpeed();
-	wait1Msec(2500);
+	wait1Msec(3500);
 	autonomousShoot();
-	wait1Msec(700);
-	mec_GyroTurnRel(180);
-	startTask(intakeControl, 7);
-	wait1Msec(500);
-	driveInches(-50,50);
-	wait1Msec(500);
-	//driveInches(-6, 30);
-	wait1Msec(500);
-	mec_GyroTurnRel(180);
-	wait1Msec(800);
 }
 
 
@@ -111,7 +101,7 @@ task usercontrol()
 
 		//writeDebugStreamLine("%f, \coeff %f  %f SETTLE TIME %f", curr, coeff, Y, nSysTime);
 		//writeDebugStreamLine("%f", GyroGetAngle());
-//	printPIDDebug(_fly.flyPID);
+	printPIDDebug(_fly.flyPID);
 	//printPIDDebug(mec.slave);
 	//writeDebugStreamLine("GYRO ANGLE : %f", GyroGetAngle());
 	//writeDebugStreamLine("%f", motor[mFly1]);
@@ -122,13 +112,13 @@ task usercontrol()
 //	writeDebugStreamLine("%d", motor[mFly1]);
 
 	//writeDebugStreamLine("%f",motor[_fly.f1]);
-		long init = nPgmTime;
+	/**	long init = nPgmTime;
 		if(abs(_fly.flyPID.error) > 200){
 				while((abs(_fly.flyPID.error) > 200)){
 					wait1Msec(20);
 				}
 			writeDebugStreamLine("SETTLE TIME %f", nPgmTime - init);
-		}
+		}**/
 		//	writeDebugStreamLine("%f, %f  %f",error, nAvgBatteryLevel, Y);
 		//writeDebugStreamLine("_fly.currSpeed%f, set %f", FwCalculateSpeed(), _setRPM);
 		wait1Msec(50);
