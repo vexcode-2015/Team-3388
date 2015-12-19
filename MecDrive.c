@@ -265,6 +265,21 @@ void mec_tmpDriveInches(float setpoint, float maxAccel, float maxSpeed){
 	}
 }
 
+void mec_tmpDriveInches2(float setpoint, float maxAccel, float maxSpeed){
+	float tend = maxSpeed / maxAccel;
+	long initTime = nPgmTime;
+	float x;
+	float v;
+	while(initTime + tend > nPgmTime){
+		x = 0.5 * maxAccel * tend * tend';
+		v = maxAccel * tend;
+	}
+	initTime += tend;
+	while(initTime + (setpoint/maxSpeed) > nPgmTime){
+		x = 0.5 * maxSpeed * maxSpeed / maxAccel + maxSpeed * ((initTime + (nPgmTime - initTime) - maxSpeed / maxAccel);
+		v = maxSpeed;
+	}
+}
 
 void driveInches(float inches, int maxSpeed){
 	//def constants
