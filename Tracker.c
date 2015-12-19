@@ -46,13 +46,8 @@ task Track()
 	bool pidEnabled = true;
 	int deadzone = 10;
 	long initTime = nPgmTime;
-
 	int initTicksL = 0;
 	int initTicksR = 0;
-	float x = 0;
-	float y = 0;
-
-
 	float currentSpeedL;
 	float currentSpeedR;
 	float dTime;
