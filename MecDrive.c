@@ -135,6 +135,43 @@ void mec_GyroTurnAbs(int degrees){
 }
 
 
+//max accel and max speed measured in degrees per second 
+void mec_TMP_gyroTurnAbs(int setpoint, float maxAccel, float maxSpeed){
+	mec.gyroPID(5,0,0,0,1300);
+	float kV = 40;
+	float kA = 20;
+	float timeToMax = maxSpeed / maxAccel;
+	float dToMax = 0.5 * maxAccel * timeToMax * timeToMax;
+
+	float topSpeed = sqrt(2 * maxAccel * (setpoint/2));
+
+	if(topSpeed > maxSpeed){
+		//TMP
+		float accel_time = (maxSpeed) / maxAccel;
+		float const_time = (setpoint + 
+	}
+	else{
+		//DIAMOND
+
+	}
+
+
+	bool atTarget = false;
+
+	long initTime = nPgmTime;
+	int leftenc_init = SensorValue[mec.leftEnc];
+	int rightenc_init = SensorValue[mec.rightEnc];
+	float maxReachedVel = 0;
+	while(!atTarget){
+		//velocity in feet/s
+
+		_setLeftDrivePow(driveOut);
+		_setRightDrivePow(driveOut);
+	}
+}
+
+
+
 void mec_GyroTurnRel(int degrees){
 	if(degrees < 0){
 		degrees += 360;
@@ -171,22 +208,24 @@ void mec_tmpDriveInches(float setpoint, float maxAccel, float maxSpeed){
 	float kV = 40;
 	float kA = 20;
 	float timeToMax = maxSpeed / maxAccel;
-	float dToMax = 0.5 * maxAccel * timeToMax * timeToMax;
+		ffloat dToMax = 0.5 * maxAccel * timeToMax * timeToMax;
 
 	bool atTarget = false;
 
 	long initTime = nPgmTime;
-	int leftenc_init;
+	int leftenc_init = SensorValue[mec.leftEnc];
+	int rightenc_init = SensorValue[mec.rightEnc];
 	float maxReachedVel = 0;
 	while(!atTarget){
 		//velocity in feet/s
 		float pred_vel = 0;
 		float pred_accl = 0;
 
-		float curr_velocity = mec_getRightVelocity(nPgmTime - initTime, leftenc_init);
+		float curr_velocity = mec_getLeftVelocity(nPgmTime - initTime, leftenc_init);
+		float curr_slave_vel = mec_getRightVelocity(nPgmTime - initTime, rightenc_init);
 		initTime = nPgmTime;
-		float curr_distance = (SensorValue[mec.leftEnc] - leftenc_init) / TICKS_PER_FEET;
-		if(curr_distance < setpoint / 2){
+		float curr_angle = (SensorValue[mec.leftEnc] - leftenc_init) / TICKS_PER_FEET;
+		if(curr_angle < setpoint / 2){
 			//if we are before halfway go full accel till max speed
 			if(abs(curr_velocity) >= abs(maxSpeed)){
 				pred_accl = 0;
@@ -195,15 +234,18 @@ void mec_tmpDriveInches(float setpoint, float maxAccel, float maxSpeed){
 			}
 			else{
 				pred_accl = maxAccel;
-				pred_vel = util_calculatePredVel(0,maxAccel,curr_distance);
+				pred_vel = util_calculatePredVel(0,maxAccel,curr_angle);
 				maxReachedVel = curr_velocity;
 			}
 		} else{
-
-			if(curr_distance > dToMax + setPoint/2{
-				//time to wait is equal to 
-				pred_vel = util_calculatePredVel(maxReachedVel,-maxAccel,curr_distance - (dToMax + (setpoint/2)));
+			//if dToMax is greater than the setpoint than we deccel right away 
+			if(setpoint/2 - dToMax < 0){
+				pred_vel = util_calculatePredVel(maxReachedVel,-maxAccel,curr_angle - ((setpoint/2)));
 				pred_accl = -maxAccel;
+			}
+			else if(curr_angle > dToMax + setPoint/2){
+				//time to wait is equal to 
+				pred_vel = util_calculatePredVel(maxReachedVel,-maxAccel,curr_angle - (dToMax + (setpoint/2)));
 			}
 			else{
 				pred_vel = maxSpeed;
@@ -214,6 +256,9 @@ void mec_tmpDriveInches(float setpoint, float maxAccel, float maxSpeed){
 		//next step is to calculate the velocity we should be traveling at and the acceleration we should be at 
 
 		int driveOut = mec.master.pidExecute(pred_vel - curr_velocity) + kV * pred_vel + kA * pred_accl;
+		int slaveOut = mec.slave.pidExecute(curr_velocity - curr_slave_vel);
+
+
 		_setLeftDrivePow(driveOut);
 		_setRightDrivePow(driveOut);
 
