@@ -2,7 +2,7 @@
 #ifndef FlyControl.c
 #define FlyControl.c
 
-#define FW_LOOP_SPEED	20
+#define FW_LOOP_SPEED	100
 
 
 #include "Utils.c"
@@ -10,14 +10,14 @@
 #include "MecDrive.c"
 
 
-const int SKILLS_RPM = 2390;
-const int SKILLS_POW = 60;
+int SKILLS_RPM = 2390; //1950
+int SKILLS_POW = 50;
 const int SHORT_RPM = 1990;
 const int SHORT_POW = 50;
 const int MED_RPM = 2550;
 const int MED_POW = 65;
-const int LONG_RPM  = 3100;
-const int HIGH_POW = 79;
+const int LONG_RPM  = 2650;//2950;
+const int HIGH_POW = 90;
 
 
 typedef struct {
@@ -174,10 +174,16 @@ void fw_fullCourtSpeed(){
 	_fly.pred = HIGH_POW;
 }
 
+void fw_skillSpeed(){
+	setFlyRpm(SKILLS_RPM);
+	_fly.pred = SKILLS_POW;
+}
+
+
 task flw_task_PIDCntrl(){
 	pidReset(_fly.flyPID);
 	//pidInit(_fly.flyPID, 0.2, 0, 0.006, 100, 9999);
-	pidInit(_fly.flyPID, 0.05, 0, 0.006, 100, 9999);
+	pidInit(_fly.flyPID, 0.15, 0, 0, 100, 9999);
 	//pidInit(_fly.flyPID, 0.1, 0, 0.006, 9999, 9999);
 	float lastRpm1 = 0;
 	float lastRpm2 = 0;
@@ -194,7 +200,7 @@ task flw_task_PIDCntrl(){
 		lastRpm2 = lastRpm1;
 		lastRpm1 = FwCalculateSpeed();
 
-		//float rpmAvg = (lastRpm4 * 1 + lastRpm3 * 2 + lastRpm2 * 8 + lastRpm1 * 16)/27;
+	//	float rpmAvg = (lastRpm4 * 1 + lastRpm3 * 2 + lastRpm2 * 8 + lastRpm1 * 16)/27;
 	//	writeDebugStreamLine("rpmAvg %f", rpmAvg);
 		_fly.currSpeed = lastRpm1 ;
 		float outVal = pidExecute(_fly.flyPID, _fly.setPoint - _fly.currSpeed);
@@ -223,7 +229,7 @@ task flw_task_PIDCntrl(){
 task flw_tsk_FeedForwardCntrl(){
 	pidReset(_fly.flyPID);
 	//TRY: fairly good fast recovery
-	pidInit(_fly.flyPID, 0.23, 0.05, 0, 100, 9999);
+	pidInit(_fly.flyPID, 0.3, 0.05, 0, 100, 9999);
 
 	//pidInit(_fly.flyPID, 0.15, 0.05, 0, 100, 9999);
 
@@ -277,14 +283,14 @@ task flw_task_bangbang(){
 		fw_ButtonControl();
 		_fly.currSpeed =  FwCalculateSpeed();
 		float error = _fly.setPoint - _fly.currSpeed;
-
+		writeDebugStreamLine("%f",error);
 
 		float outVal = 0;
-		if(abs(error) > 200){
-			outVal = error > 0 ? 127 : 50;
+		if(abs(error) > 100){
+			outVal = error > 0 ? 127 : 60;
 		}
 		else{
-			outVal = error > 0 ? 85 : 65;
+			outVal = error > 0 ? 80 : 70;
 		}
 
 		float output = outVal;

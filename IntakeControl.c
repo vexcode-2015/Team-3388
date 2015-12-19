@@ -15,7 +15,7 @@ const int shootDelay = 400;
 
 
 IntakeController _intakeController;
-const int intakeDriveTicks = 400;
+const int intakeDriveTicks = 370;
 void driveIntake(int ticks){
 	int dTicks = 0;
 	int iTicks = -SensorValue[ _intakeController.enc ];
@@ -101,6 +101,13 @@ void autoShoot(){
 }
 
 
+void _decrementBallCount(){
+	if( _intakeController.ballCount > 2){
+		_intakeController.ballCount--;
+	}
+}
+
+
 
 task intakeControl(){
 	long initTime = nSysTime;
@@ -139,13 +146,13 @@ task intakeControl(){
 			}
 		}
 		else if(vexRT[Btn6D] == 1){
-			_intakeController.ballCount = 0;
 			//override
+			_decrementBallCount();
 			driveIntake(intakeDriveTicks);
 		}
 		else if(vexRT[Btn6U] == 1){
-			_intakeController.ballCount = 0;
-			//override
+			_decrementBallCount();
+
 			driveIntake(-intakeDriveTicks);
 		}
 		else if(vexRT[Btn7U] == 1){
@@ -174,12 +181,15 @@ task intakeControl(){
 			wait1Msec(shootDelay);
 		}
 			while(vexRT[Btn7R] == 1){
-				if(abs(_fly.flyPID.error) < 150){
-						driveIntake(intakeDriveTicks);
-						_intakeController.ballCount = 0;
-				}
+					if(abs(_fly.flyPID.error) < 100){
+								driveIntake(intakeDriveTicks);
+								_intakeController.ballCount = 0;
+								_decrementBallCount();
 
+					}
+				wait1Msec(20);
 		}
+
 
 		wait1Msec(20);
 	}
@@ -194,5 +204,14 @@ void autonomousShoot(){
 	wait1Msec(900);
 	driveIntake();
 	wait1Msec(900);
+	_intakeController.ballCount = 0;
 }
+
+void fw_skillsShoot(){
+	driveIntake();
+	wait1Msec(1200);
+	return;
+}
+
+
 #endif
