@@ -10,13 +10,13 @@
 #include "MecDrive.c"
 
 
-int SKILLS_RPM = 2390; //1950
-int SKILLS_POW = 50;
-const int SHORT_RPM = 1990;
+int SKILLS_RPM = 2070; //1950
+int SKILLS_POW = 65;
+const int SHORT_RPM = 1660;
 const int SHORT_POW = 50;
-const int MED_RPM = 2550;
+const int MED_RPM = 2050;
 const int MED_POW = 65;
-const int LONG_RPM  = 2650;//2950;
+const int LONG_RPM  = 2680;//2950;
 const int HIGH_POW = 90;
 
 
@@ -221,7 +221,7 @@ task flw_task_PIDCntrl(){
 task flw_tsk_FeedForwardCntrl(){
 	pidReset(_fly.flyPID);
 	//TRY: fairly good fast recovery
-	pidInit(_fly.flyPID, 0.3, 0.05, 0, 100, 9999);
+	pidInit(_fly.flyPID, 0.4 , 0.05, 0, 0, 9999);
 
 	//pidInit(_fly.flyPID, 0.15, 0.05, 0, 100, 9999);
 

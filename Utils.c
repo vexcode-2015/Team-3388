@@ -38,7 +38,6 @@ void setLinMotorPow(int index, int power){
 	}
 	if(abs(power) > 127){
 		power = 127 * (power/abs(power));
-		return;
 	}
 	motor[index] = _MotorMap[abs(power)] * (power/abs(power)) ;
 }
