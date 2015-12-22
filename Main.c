@@ -35,7 +35,7 @@ DriveBase dr;
 int autoNum = 0;
 void pre_auton()
 {
-	bStopTasksBetweenModes = true;
+	bStopTasksBetweenModes = false;
 	dr.fl = mDrFl; dr.fr = mDrFr; dr.bl = mDrBl;	dr.br = mDrBr; dr.ml = mDrMl; dr.mr = mDrMr;
 	dr.gyro = gyroDrive; dr.encLeft = encLeftDr; dr.encRight = encRightDr;
 
@@ -49,10 +49,8 @@ void pre_auton()
 	if (!(nVexRCReceiveState & vrDisabled)){
 		break;
 	}
-
 	printCalibratingGyro();
-	wait1Msec(1500)
-	enableGyro();
+	GyroInit(gyroDrive);
 	wait1Msec(3000);
 
 
@@ -65,11 +63,27 @@ void pre_auton()
 task autonomous()
 {
 
-//	initFlyWheel(fly);
-//	fw_skillSpeed();
+		bStopTasksBetweenModes = true;
+	initFlyWheel(fly);
+	//fw_skillSpeed();
 	///fw_fullCourtSpeed();
-
-	mec_tmpDriveInches(1,0.2,1);
+	startTask(intakeControl);
+	mec_driveInches(12);
+	mec_GyroTurnRel(125);
+	mec_driveInches(-28);
+	mec_GyroTurnRel(-90);
+	mec_driveInches(-15,50,1000);
+	mec_driveInches(5,50,500);
+	mec_driveInches(-7,50,1000);
+	fw_skillSpeed();
+	mec_driveInches(46,80,9999);
+	mec_GyroTurnAbs(0);
+	mec_driveInches(8);
+	stopTask(intakeControl);
+	while(true){
+		ink_fireWhenReady(50);
+	}
+	//mec_tmpDriveInches(1,0.2,1);
 
 
 }
@@ -104,7 +118,6 @@ task usercontrol()
 
 		//writeDebugStreamLine("%f, \coeff %f  %f SETTLE TIME %f", curr, coeff, Y, nSysTime);
 		//writeDebugStreamLine("%f", GyroGetAngle());
-	printPIDDebug(_fly.flyPID);
 	//printPIDDebug(mec.slave);
 	//writeDebugStreamLine("GYRO ANGLE : %f", GyroGetAngle());
 	//writeDebugStreamLine("%f", motor[mFly1]);
@@ -112,8 +125,8 @@ task usercontrol()
 //	writeDebugStreamLine("%f", _intakeController.ballCount);
 //	writeDebugStreamLine("%f : %f", curr, motor[mFly1]);
 
-	writeDebugStreamLine("%d", motor[mFly1]);
 
+	printPIDDebug(mec.gyroPID);
 
 	/**	long init = nPgmTime;
 		if(abs(_fly.flyPID.error) > 200){

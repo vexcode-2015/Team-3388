@@ -67,8 +67,7 @@ void _setRightDrivePow(int power){
 }
 
 void mec_GyroTurnAbs(int degrees){
-	GyroResetAngle();
-	pidInit(mec.gyroPID, 0.9333,1.5,0.2,1,1270);
+	pidInit(mec.gyroPID, 1.6333,2,0.3,0,1270);
 	pidInit(mec.slave, 	0.2,0,0,0,1270);
 	mec.pidEnabled = false;
 	degrees = degrees % 360;
@@ -85,16 +84,18 @@ void mec_GyroTurnAbs(int degrees){
 	float initTicksL = SensorValue[mec.encLeft];
 	float initTicksR = SensorValue[mec.encRight];
 
-	int integralLimit = 40 / mec.gyroPID.kI;
+	int integralLimit = 30 / mec.gyroPID.kI;
 
 	while(!targetReached){
 
 		//deal with input values
 		float error = setPoint - GyroGetAngle();
+		writeDebugStreamLine("%f", GyroGetAngle());
+		writeDebugStreamLine("init error: %f", error);
 		if(abs(error) > abs( setPoint - (GyroGetAngle() + 360))){
 				error = setPoint - (GyroGetAngle() + 360) ;
 		}
-		if(abs(error) > abs( setPoint - (GyroGetAngle() - 360))){
+		else if(abs(error) > abs( setPoint - (GyroGetAngle() - 360))){
 				error = setpoint - (GyroGetAngle() - 360);
 		}
 
@@ -179,7 +180,7 @@ void mec_GyroTurnRel(int degrees){
 	if(degrees > 360){
 		degrees -= 360;
 	}
-	mec_GyroTurnAbs(degrees);
+	mec_GyroTurnAbs(GyroGetAngle() + degrees);
 }
 
 void enableGyro(){
@@ -293,14 +294,14 @@ void mec_tmpDriveInches2(float setpoint, float maxAccel, float maxSpeed){
 	}
 }
 
-void driveInches(float inches, int maxSpeed){
+void mec_driveInches(float inches, int maxSpeed,int expiryms){
 	//def constants
-	pidInit(mec.master, 0.5,0.1,0.1,0,1270);
+	pidInit(mec.master, 0.5,0.3,0.2,0,1270);
 	pidInit(mec.slave, 0.3,0,0,0,1270);
 	pidReset(mec.master);
 	pidReset(mec.slave);
 
-	int integralLimit = 30 / mec.master.ki;
+	int integralLimit = 40 / mec.master.ki;
 
 	//turn off pid task
 	mec.pidEnabled = false;
@@ -309,6 +310,7 @@ void driveInches(float inches, int maxSpeed){
 	float setPoint = inches * TICKS_PER_INCHES;
 	long timeInit = nPgmTime;
 	long atTargetTime = nPgmTime;
+	long expTime = nPgmTime + expiryms;
 	float errorThreshold = 0.2 * TICKS_PER_INCHES; //tolerance of 0.2 inches
 
 	int initDriveL = SensorValue[mec.encLeft];
@@ -344,12 +346,16 @@ void driveInches(float inches, int maxSpeed){
 			_setRightDrivePow(0);
 			break;
 		}
+		if(nPgmTime >= expTime){
+			writeDebugStreamLine("TARGET NOT REACHED");
+			break;
+		}
 	}
 	mec.pidEnabled = true;
 }
 
-void driveInches(float inches){
-	driveInches(inches,70);
+void mec_driveInches(float inches){
+	mec_driveInches(inches,70,99999);
 }
 
 

@@ -82,7 +82,12 @@ void autoIntake(){
 	}
 
 	if(_intakeController.ballCount == 4){
-		motor[_intakeController.outIntake] = 0;
+		if(!ballAtOuter()){
+			_intakeController.ballCount--;
+		}
+		else{
+			motor[_intakeController.outIntake] = 0;
+		}
 		wait1Msec(200);
 	}
 	else{
@@ -105,6 +110,14 @@ void _decrementBallCount(){
 	if( _intakeController.ballCount > 2){
 		_intakeController.ballCount--;
 	}
+}
+
+void ink_fireWhenReady(int threshold){
+
+		if(abs(_fly.flyPID.error) < threshold){
+				driveIntake(intakeDriveTicks);
+		}
+
 }
 
 
@@ -181,12 +194,7 @@ task intakeControl(){
 			wait1Msec(shootDelay);
 		}
 			while(vexRT[Btn7R] == 1){
-					if(abs(_fly.flyPID.error) < 100){
-								driveIntake(intakeDriveTicks);
-								_intakeController.ballCount = 0;
-								_decrementBallCount();
-
-					}
+				ink_fireWhenReady(50);
 				wait1Msec(20);
 		}
 

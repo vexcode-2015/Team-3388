@@ -11,13 +11,13 @@
 
 
 int SKILLS_RPM = 2070; //1950
-int SKILLS_POW = 65;
-const int SHORT_RPM = 1660;
-const int SHORT_POW = 50;
+int SKILLS_POW = 45;
+const int SHORT_RPM = 1720;
+const int SHORT_POW = 35;
 const int MED_RPM = 2050;
-const int MED_POW = 65;
+const int MED_POW = 45;
 const int LONG_RPM  = 2680;//2950;
-const int HIGH_POW = 90;
+const int HIGH_POW = 75;
 
 
 typedef struct {
@@ -171,6 +171,11 @@ void fw_skillSpeed(){
 	_fly.pred = SKILLS_POW;
 }
 
+void fw_midSpeed(){
+	setFlyRpm(MED_RPM);
+	_fly.pred = MED_POW;
+}
+
 
 task flw_task_PIDCntrl(){
 	pidReset(_fly.flyPID);
@@ -221,7 +226,7 @@ task flw_task_PIDCntrl(){
 task flw_tsk_FeedForwardCntrl(){
 	pidReset(_fly.flyPID);
 	//TRY: fairly good fast recovery
-	pidInit(_fly.flyPID, 0.4 , 0.05, 0, 0, 9999);
+	pidInit(_fly.flyPID, 0.5 , 0.1, 0, 0, 9999);
 
 	//pidInit(_fly.flyPID, 0.15, 0.05, 0, 100, 9999);
 

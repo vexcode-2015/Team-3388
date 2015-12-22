@@ -136,7 +136,7 @@ GyroInit( tSensors port  )
 {
     theGyro.port = port;
 
-    StartTask( GyroTask );
+    StartTask( GyroTask, 30 );
 }
 
 /*-----------------------------------------------------------------------------*/
