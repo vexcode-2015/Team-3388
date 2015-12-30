@@ -10,14 +10,14 @@
 #include "MecDrive.c"
 
 
-int SKILLS_RPM = 2070; //1950
-int SKILLS_POW = 45;
-const int SHORT_RPM = 1720;
+int SKILLS_RPM = 1950; //1950
+int SKILLS_POW = 55;
+const int SHORT_RPM = 1620;
 const int SHORT_POW = 35;
-const int MED_RPM = 2050;
+const int MED_RPM = 1950;
 const int MED_POW = 45;
-const int LONG_RPM  = 2680;//2950;
-const int HIGH_POW = 75;
+const int LONG_RPM  = 2520;//2680;//2950;
+const int HIGH_POW = 65;//75;
 
 
 typedef struct {
@@ -226,7 +226,8 @@ task flw_task_PIDCntrl(){
 task flw_tsk_FeedForwardCntrl(){
 	pidReset(_fly.flyPID);
 	//TRY: fairly good fast recovery
-	pidInit(_fly.flyPID, 0.5 , 0.1, 0, 0, 9999);
+	//prev P 0.5
+	pidInit(_fly.flyPID, 0.65 , 0.1, 0, 0, 9999);
 
 	//pidInit(_fly.flyPID, 0.15, 0.05, 0, 100, 9999);
 

@@ -24,6 +24,7 @@
 #include "FlyControl.c"
 #include "Utils.c"
 #include "IntakeControl.c"
+#include "Auto.c"
 #pragma platform(VEX2)
 #pragma competitionControl(Competition)
 #pragma autonomousDuration(15)
@@ -33,6 +34,15 @@
 Fw_Controller fly;
 DriveBase dr;
 int autoNum = 0;
+
+void motorTest(){
+	for(int i = 0; i<10; i++){
+		motor[i] = 50;
+		wait1Msec(500);
+		motor[i] = 0;
+	}
+}
+
 void pre_auton()
 {
 	bStopTasksBetweenModes = false;
@@ -53,7 +63,6 @@ void pre_auton()
 	GyroInit(gyroDrive);
 	wait1Msec(3000);
 
-
 	while((nVexRCReceiveState & vrDisabled)){
 		printBatteryToLCD();
 	}
@@ -62,27 +71,9 @@ void pre_auton()
 
 task autonomous()
 {
-
-		bStopTasksBetweenModes = true;
+	bStopTasksBetweenModes = true;
 	initFlyWheel(fly);
-	//fw_skillSpeed();
-	///fw_fullCourtSpeed();
-	startTask(intakeControl);
-	mec_driveInches(12);
-	mec_GyroTurnRel(125);
-	mec_driveInches(-28);
-	mec_GyroTurnRel(-90);
-	mec_driveInches(-15,50,1000);
-	mec_driveInches(5,50,500);
-	mec_driveInches(-7,50,1000);
-	fw_skillSpeed();
-	mec_driveInches(46,80,9999);
-	mec_GyroTurnAbs(0);
-	mec_driveInches(8);
-	stopTask(intakeControl);
-	while(true){
-		ink_fireWhenReady(50);
-	}
+	auto_rout_facingStack();
 	//mec_tmpDriveInches(1,0.2,1);
 
 
@@ -116,17 +107,17 @@ task usercontrol()
 
 	//writeDebugStreamLine("%f", _fly.flyPID.kP);
 
-		//writeDebugStreamLine("%f, \coeff %f  %f SETTLE TIME %f", curr, coeff, Y, nSysTime);
-		//writeDebugStreamLine("%f", GyroGetAngle());
+	//writeDebugStreamLine("%f, \coeff %f  %f SETTLE TIME %f", curr, coeff, Y, nSysTime);
+	//writeDebugStreamLine("%f", GyroGetAngle());
 	//printPIDDebug(mec.slave);
 	//writeDebugStreamLine("GYRO ANGLE : %f", GyroGetAngle());
 	//writeDebugStreamLine("%f", motor[mFly1]);
-//printPIDDebug(mec.master);
-//	writeDebugStreamLine("%f", _intakeController.ballCount);
-//	writeDebugStreamLine("%f : %f", curr, motor[mFly1]);
+	//printPIDDebug(mec.master);
+	//	writeDebugStreamLine("%f", _intakeController.ballCount);
+	writeDebugStreamLine("%f :",motor[mFly1]);
 
 
-	printPIDDebug(mec.gyroPID);
+	printPIDDebug(_fly.flyPID);
 
 	/**	long init = nPgmTime;
 		if(abs(_fly.flyPID.error) > 200){

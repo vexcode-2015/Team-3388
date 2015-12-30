@@ -65,7 +65,7 @@ void incrementBallCount(){
 
 void autoIntake(){
 	if(ballAtLift() && _intakeController.ballCount <= 1){
-			wait1Msec(500);
+		wait1Msec(200);
 			driveIntake(intakeDriveTicks);
 			_intakeController.ballCount++;
 			wait1Msec(200);
@@ -107,7 +107,7 @@ void autoShoot(){
 
 
 void _decrementBallCount(){
-	if( _intakeController.ballCount > 2){
+	if( _intakeController.ballCount >= 2){
 		_intakeController.ballCount--;
 	}
 }
@@ -116,10 +116,26 @@ void ink_fireWhenReady(int threshold){
 
 		if(abs(_fly.flyPID.error) < threshold){
 				driveIntake(intakeDriveTicks);
-		}
-
+				if(_intakeController.ballCount == 1){
+						driveIntake(intakeDriveTicks);
+				}
+				if(_intakeController.ballCount != 0){
+					_intakeController.ballCount--;
+				}
+	}
+	autoIntake();
 }
 
+void ink_waitUntilFire(int errorThresh){
+	bool fired = false;
+	while(!fired){
+		if(abs(_fly.flyPID.error) < errorThresh){
+			driveIntake(intakeDriveTicks);
+			fired = true;
+		}
+		wait1Msec(100);
+	}
+}
 
 
 task intakeControl(){
@@ -160,8 +176,10 @@ task intakeControl(){
 		}
 		else if(vexRT[Btn6D] == 1){
 			//override
-			_decrementBallCount();
-			driveIntake(intakeDriveTicks);
+			while(vexRT[Btn6D] == 1){
+				ink_fireWhenReady(30);
+				wait1Msec(20);
+			}
 		}
 		else if(vexRT[Btn6U] == 1){
 			_decrementBallCount();
@@ -194,7 +212,7 @@ task intakeControl(){
 			wait1Msec(shootDelay);
 		}
 			while(vexRT[Btn7R] == 1){
-				ink_fireWhenReady(50);
+				ink_fireWhenReady(30);
 				wait1Msec(20);
 		}
 

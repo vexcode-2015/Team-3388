@@ -33,9 +33,18 @@
 Fw_Controller fly;
 DriveBase dr;
 int autoNum = 0;
+
+void motorTest(){
+	for(int i = 0; i<10; i++){
+		motor[i] = 50;
+		wait1Msec(500);
+		motor[i] = 0;
+	}
+}
+
 void pre_auton()
 {
-	bStopTasksBetweenModes = true;
+	bStopTasksBetweenModes = false;
 	dr.fl = mDrFl; dr.fr = mDrFr; dr.bl = mDrBl;	dr.br = mDrBr; dr.ml = mDrMl; dr.mr = mDrMr;
 	dr.gyro = gyroDrive; dr.encLeft = encLeftDr; dr.encRight = encRightDr;
 
@@ -49,10 +58,8 @@ void pre_auton()
 	if (!(nVexRCReceiveState & vrDisabled)){
 		break;
 	}
-
 	printCalibratingGyro();
-	wait1Msec(1500)
-	enableGyro();
+	GyroInit(gyroDrive);
 	wait1Msec(3000);
 
 
@@ -64,17 +71,38 @@ void pre_auton()
 
 task autonomous()
 {
-	GyroResetAngle();
+	bStopTasksBetweenModes = true;
 	initFlyWheel(fly);
-	fw_fullCourtSpeed();
-	wait1Msec(3000);
+	fw_skillSpeed();
 
-
-	while(true){
-		autonomousShoot();
-		wait1Msec(500);
+	///fw_fullCourtSpeed();
+	mec_GyroTurnRel(-3);
+	long switchTime = nPgmTime + 20000;
+	while(nPgmTime <  switchTime){
+		ink_fireWhenReady(50);
+		string timeLeft;
+		displayLCDString(0, 0, "Swap: ");
+		sprintf(timeLeft, "%d", switchTime - nPgmTime);
+		displayNextLCDString(timeLeft);
 	}
-	wait1Msec(60000);
+	startTask(intakeControl);
+	mec_GyroTurnAbs(-90);
+	mec_driveInches(-115,80,9999);
+	mec_GyroTurnAbs(5);
+	stopTask(intakeControl);
+	while(true){
+		ink_fireWhenReady(50);
+
+	}
+
+//	fw_skillSpeed();
+	stopTask(intakeControl);
+	while(true){
+		ink_fireWhenReady(50);
+	}
+	//mec_tmpDriveInches(1,0.2,1);
+
+
 }
 
 
@@ -103,11 +131,10 @@ task usercontrol()
 	//	_mecDrive();
 		//driveTesting();
 
-	//	writeDebugStreamLine("%f", _fly.flyPID.kP);
+	//writeDebugStreamLine("%f", _fly.flyPID.kP);
 
 		//writeDebugStreamLine("%f, \coeff %f  %f SETTLE TIME %f", curr, coeff, Y, nSysTime);
 		//writeDebugStreamLine("%f", GyroGetAngle());
-//	printPIDDebug(_fly.flyPID);
 	//printPIDDebug(mec.slave);
 	//writeDebugStreamLine("GYRO ANGLE : %f", GyroGetAngle());
 	//writeDebugStreamLine("%f", motor[mFly1]);
@@ -115,16 +142,16 @@ task usercontrol()
 //	writeDebugStreamLine("%f", _intakeController.ballCount);
 //	writeDebugStreamLine("%f : %f", curr, motor[mFly1]);
 
-//	writeDebugStreamLine("%d", motor[mFly1]);
 
-	//writeDebugStreamLine("%f",motor[_fly.f1]);
-		long init = nPgmTime;
+	printPIDDebug(_fly.flyPID);
+
+	/**	long init = nPgmTime;
 		if(abs(_fly.flyPID.error) > 200){
 				while((abs(_fly.flyPID.error) > 200)){
 					wait1Msec(20);
 				}
 			writeDebugStreamLine("SETTLE TIME %f", nPgmTime - init);
-		}
+		}**/
 		//	writeDebugStreamLine("%f, %f  %f",error, nAvgBatteryLevel, Y);
 		//writeDebugStreamLine("_fly.currSpeed%f, set %f", FwCalculateSpeed(), _setRPM);
 		wait1Msec(50);

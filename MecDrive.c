@@ -67,8 +67,8 @@ void _setRightDrivePow(int power){
 }
 
 void mec_GyroTurnAbs(int degrees){
-	pidInit(mec.gyroPID, 1.6333,2,0.3,0,1270);
-	pidInit(mec.slave, 	0.2,0,0,0,1270);
+	pidInit(mec.gyroPID, 1.9333,1.5,0.3,0,1270);
+	pidInit(mec.slave, 	0.45,0,0,0,1270);
 	mec.pidEnabled = false;
 	degrees = degrees % 360;
 	//this might break things
@@ -79,12 +79,12 @@ void mec_GyroTurnAbs(int degrees){
 	long timeInit = nPgmTime;
 	long atTargetTime = nPgmTime;
 
-	int errorThreshold = 2; //tolerance of 2 degrees
+	float errorThreshold = 0.6; //tolerance of 0.2 degrees
 
 	float initTicksL = SensorValue[mec.encLeft];
 	float initTicksR = SensorValue[mec.encRight];
 
-	int integralLimit = 30 / mec.gyroPID.kI;
+	int integralLimit = 15 / mec.gyroPID.kI;
 
 	while(!targetReached){
 
@@ -119,13 +119,20 @@ void mec_GyroTurnAbs(int degrees){
 	//		driveOut = driveOut / n;
 	//		slaveOut = slaveOut / n;
 	//	}
+		int minVal = 15;
+		if(abs(error) > errorThreshold){
+			atTargetTime = nPgmTime;
+			driveOut += minVal * driveOut / abs(driveOut);
+		}
+
+		if(abs(driveOut) > 100){
+			driveOut = 100 * driveOut / abs(driveOut);
+		}
 		_setLeftDrivePow(driveOut + slaveOut);
 		_setRightDrivePow(-(driveOut - slaveOut));
 		printPIDDebug(mec.slave);
-		if(abs(error) > errorThreshold){
-			atTargetTime = nPgmTime;
-		}
-		if(nPgmTime - atTargetTime > 350){
+
+		if(nPgmTime - atTargetTime > 250){
 			targetReached = true;
 			_setLeftDrivePow(0);
 			_setRightDrivePow(0);
@@ -311,7 +318,7 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms){
 	long timeInit = nPgmTime;
 	long atTargetTime = nPgmTime;
 	long expTime = nPgmTime + expiryms;
-	float errorThreshold = 0.2 * TICKS_PER_INCHES; //tolerance of 0.2 inches
+	float errorThreshold = 0.5 * TICKS_PER_INCHES; //tolerance of 0.2 inches
 
 	int initDriveL = SensorValue[mec.encLeft];
 	int initDriveR = SensorValue[mec.encRight];
@@ -340,7 +347,7 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms){
 		if(abs(error) > errorThreshold){
 			atTargetTime = nPgmTime;
 		}
-		if(nPgmTime - atTargetTime > 350){
+		if(nPgmTime - atTargetTime > 150){
 			targetReached = true;
 			_setLeftDrivePow(0);
 			_setRightDrivePow(0);

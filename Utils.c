@@ -121,7 +121,7 @@ int readAutoNum(){
 			}
 		}
 	}
-
+ return 0;
 }
 
 task utl_DebugHelperTask(){
