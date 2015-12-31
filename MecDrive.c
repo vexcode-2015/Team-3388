@@ -22,7 +22,6 @@ typedef struct {
 	PID master;
 	PID slave;
 	PID gyroPID;
-	bool smartDrive;
 	float netDistance;
 	bool pidEnabled;
 } DriveBase;
@@ -66,7 +65,9 @@ void _setRightDrivePow(int power){
 	setLinMotorPow(mec.mr,power);
 }
 
-void mec_GyroTurnAbs(int degrees){
+
+
+void mec_GyroTurnAbs(float degrees, bool escapable){
 	pidInit(mec.gyroPID, 1.9333,1.5,0.3,0,1270);
 	pidInit(mec.slave, 	0.45,0,0,0,1270);
 	mec.pidEnabled = false;
@@ -85,7 +86,7 @@ void mec_GyroTurnAbs(int degrees){
 	float initTicksR = SensorValue[mec.encRight];
 
 	int integralLimit = 15 / mec.gyroPID.kI;
-
+	int escapeThresh = 30;
 	while(!targetReached){
 
 		//deal with input values
@@ -138,45 +139,19 @@ void mec_GyroTurnAbs(int degrees){
 			_setRightDrivePow(0);
 			break;
 		}
+
+		if(escapable){
+			if(vexRT[Ch2] > escapeThresh || vexRT[Ch3] > escapeThresh || vexRT[Ch1] > escapeThresh || vexRT[Ch4] > escapeThresh){
+				return;
+			}
+		}
 	}
 	mec.pidEnabled = true;
 }
 
-
-//max accel and max speed measured in degrees per second
-/**void mec_TMP_gyroTurnAbs(int setpoint, float maxAccel, float maxSpeed){
-	mec.gyroPID(5,0,0,0,1300);
-	float kV = 40;
-	float kA = 20;
-	float timeToMax = maxSpeed / maxAccel;
-	float dToMax = 0.5 * maxAccel * timeToMax * timeToMax;
-
-	float topSpeed = sqrt(2 * maxAccel * (setpoint/2));
-
-	if(topSpeed > maxSpeed){
-		//TMP
-		float accel_time = (maxSpeed) / maxAccel;
-		float const_time = 0;
-	}
-	else{
-		//DIAMOND
-
-	}
-
-
-	bool atTarget = false;
-
-	long initTime = nPgmTime;
-	int leftenc_init = SensorValue[mec.leftEnc];
-	int rightenc_init = SensorValue[mec.rightEnc];
-	float maxReachedVel = 0;
-	while(!atTarget){
-		//velocity in feet/s
-
-		_setLeftDrivePow(driveOut);
-		_setRightDrivePow(driveOut);
-	}
-} **/
+void mec_GyroTurnAbs(float degrees){
+	mec_GyroTurnAbs(degrees, false);
+}
 
 
 
@@ -205,7 +180,7 @@ return 0;
 }
 
 float mec_getRightVelocity(float dTime, int initEnc){
-		if(dTime != 0){
+	if(dTime != 0){
 	return ((SensorValue[mec.encRight] - initEnc) / dTime) / TICKS_PER_FEET;
 }
 return 0;
@@ -446,20 +421,22 @@ void _mecDrive(){
 }
 
 void faceNet(){
-	//	gyroTurnDegreesAbs(trk_GetNetAngle());
+	gyroTurnDegreesAbs(trk_GetNetAngle(), true);
 }
 
 task _PIDmecDrive(){
 	zeroDriveEncoders();
+	startTask(trk_tsk_Track);
+	trk_initEncoders(mec.leftEnc, mec.rightEnc);
 	mec.pidEnabled = true;
 	bool running = true;
 	while(running){
 		while(mec.pidEnabled){
-		//	if(vexRT[Btn7L] == 1){
-		//		faceNet();
-		//	}
-		_mecDrive();
-		wait1Msec(20);
+			if(vexRT[Btn7L] == 1){
+				faceNet();
+			}
+			_mecDrive();
+			wait1Msec(20);
 		}
 		wait1Msec(50);
 	}

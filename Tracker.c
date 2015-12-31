@@ -3,51 +3,63 @@
 
 #include "Constants.h"
 
- struct Position{
+struct Position{
 	float x;
 	float y;
+	float netX;
+	float netY;
 	float netDistance;
 	tSensors leftEnc;
 	tSensors rightEnc;
 };
 
 Position _RobotPos;
-float GetRobotX(){
 
+void trk_initEncoders(tSensors left, tSensors right){
+	_RobotPos.leftEnc = left;
+	_RobotPos.rightEnc = right;
+	_RobotPos.netY = 169.7;
+	_RobotPos.netX = 0;
 }
 
-float GetRobotY(){
-
+float trk_GetRobotX(){
+	return _RobotPos.x;
 }
 
-float netX = 0;
-float netY = 434.45 * TICKS_PER_CENTIMETERS;
+float trk_GetRobotY(){
+	return _RobotPos.y;
+}
 
-void setNetDistance(float netX, float netY, float currX, float currY){
+void trk_setNetDistance(float netX, float netY, float currX, float currY){
 	float dY = netY - currY;
 	float dX = netX - currX;
 	_RobotPos.netDistance = sqrt(dY * dY + dX * dX);
 }
 
+void trk_zeroNetAtGoal(){
+	_RobotPos.netX = 0;
+	_RobotPos.netY = 36;
+}
+
 
 float trk_GetNetAngle(){
-	float dY = netY - _RobotPos.y;
-	float dX = netX - _RobotPos.x;
+	float dY = _RobotPos.netY - _RobotPos.y;
+	float dX = _RobotPos.netX - _RobotPos.x;
+	if(dX == 0){
+		return dY > 0 ? 0 : 180;
+	}
 	return radiansToDegrees(atan(dY/dX));
 }
 
-
-float getNetDistance(){
+float trk_getNetDistance(){
 	return _RobotPos.netDistance;
 }
 
-task Track()
+task trk_tsk_Track()
 {
-	bool pidEnabled = true;
-	int deadzone = 10;
 	long initTime = nPgmTime;
-	int initTicksL = 0;
-	int initTicksR = 0;
+	int initTicksL = SensorValue[_RobotPos.leftEnc];
+	int initTicksR = SensorValue[_RobotPos.rightEnc];
 	float currentSpeedL;
 	float currentSpeedR;
 	float dTime;
@@ -57,8 +69,8 @@ task Track()
 		//find the vel of our robot
 
 		if(dTime != 0){
-			 currentSpeedL = ((initTicksL - SensorValue[_RobotPos.leftEnc]) * TICKS_PER_CENTIMETERS) / dTime;
-			 currentSpeedR = ((initTicksR - SensorValue[_RobotPos.rightEnc]) * TICKS_PER_CENTIMETERS) / dTime;
+			 currentSpeedL = ((initTicksL - SensorValue[_RobotPos.leftEnc]) / TICKS_PER_INCHES) / dTime;
+			 currentSpeedR = ((initTicksR - SensorValue[_RobotPos.rightEnc]) / TICKS_PER_INCHES) / dTime;
 		}
 		initTicksL = SensorValue[_RobotPos.leftEnc];
 		initTicksR = SensorValue[_RobotPos.rightEnc];
