@@ -1,8 +1,10 @@
 #pragma config(UART_Usage, UART1, uartVEXLCD, baudRate19200, IOPins, None, None)
 #pragma config(UART_Usage, UART2, uartNotUsed, baudRate4800, IOPins, None, None)
-#pragma config(Sensor, in2,    gyroDrive,      sensorNone)
+#pragma config(Sensor, in2,    gyroDrive,      sensorAnalog)
 #pragma config(Sensor, in3,    lfIntake,       sensorLineFollower)
 #pragma config(Sensor, in4,    lfOuter,        sensorLineFollower)
+#pragma config(Sensor, in6,    accelY,         sensorAccelerometer)
+#pragma config(Sensor, in7,    accelX,         sensorAccelerometer)
 #pragma config(Sensor, dgtl1,  encLeftDr,      sensorQuadEncoder)
 #pragma config(Sensor, dgtl5,  encFlywheel,    sensorQuadEncoder)
 #pragma config(Sensor, dgtl7,  encIntake,      sensorQuadEncoder)
@@ -60,12 +62,12 @@ void pre_auton()
 		break;
 	}
 	printCalibratingGyro();
-	GyroInit(gyroDrive);
+	GyroInit(port2, accelX, accelY);
 	wait1Msec(3000);
 
-	while((nVexRCReceiveState & vrDisabled)){
-		printBatteryToLCD();
-	}
+//	while((nVexRCReceiveState & vrDisabled)){
+//		printBatteryToLCD();
+//	}
 }
 	bool redSide = true;
 
@@ -94,7 +96,7 @@ void driveTesting(){
 task usercontrol()
 {
 	setStatusLight(statusLightRed);
-	GyroResetAngle();
+	//GyroResetAngle();
 	initFlyWheel(fly);
 	initMecDrive(dr);
 	mec_StartTeleop();
@@ -114,10 +116,10 @@ task usercontrol()
 	//writeDebugStreamLine("%f", motor[mFly1]);
 	//printPIDDebug(mec.master);
 	//	writeDebugStreamLine("%f", _intakeController.ballCount);
-	writeDebugStreamLine("%f :",motor[mFly1]);
+	writeDebugStreamLine("%f :",  trk_GetNetAngle());
 
 
-	printPIDDebug(_fly.flyPID);
+	//printPIDDebug(_fly.flyPID);
 
 	/**	long init = nPgmTime;
 		if(abs(_fly.flyPID.error) > 200){
@@ -128,6 +130,6 @@ task usercontrol()
 		}**/
 		//	writeDebugStreamLine("%f, %f  %f",error, nAvgBatteryLevel, Y);
 		//writeDebugStreamLine("_fly.currSpeed%f, set %f", FwCalculateSpeed(), _setRPM);
-		wait1Msec(50);
+		wait1Msec(200);
 	}
 }

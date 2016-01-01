@@ -67,9 +67,11 @@ void _setRightDrivePow(int power){
 
 
 
-void mec_GyroTurnAbs(float degrees, bool escapable){
+void mec_GyroTurnAbs(int degrees, bool escapable){
 	pidInit(mec.gyroPID, 1.9333,1.5,0.3,0,1270);
 	pidInit(mec.slave, 	0.45,0,0,0,1270);
+	pidReset(mec.gyroPID);
+	pidReset(mec.slave);
 	mec.pidEnabled = false;
 	degrees = degrees % 360;
 	//this might break things
@@ -141,7 +143,11 @@ void mec_GyroTurnAbs(float degrees, bool escapable){
 		}
 
 		if(escapable){
-			if(vexRT[Ch2] > escapeThresh || vexRT[Ch3] > escapeThresh || vexRT[Ch1] > escapeThresh || vexRT[Ch4] > escapeThresh){
+			if(abs(vexRT[Ch2]) > escapeThresh || abs(vexRT[Ch3]) > escapeThresh || abs(vexRT[Ch1]) > escapeThresh
+				|| abs(vexRT[Ch4]) > escapeThresh){
+				targetReached = true;
+			_setLeftDrivePow(0);
+			_setRightDrivePow(0);
 				return;
 			}
 		}
@@ -166,7 +172,7 @@ void mec_GyroTurnRel(int degrees){
 }
 
 void enableGyro(){
-	GyroInit(mec.gyro);
+	//GyroInit(mec.gyro, xAccel, yAccel);
 }
 
 
@@ -420,20 +426,22 @@ void _mecDrive(){
 	_setRightDrivePow(rightOut);
 }
 
+
 void faceNet(){
-	gyroTurnDegreesAbs(trk_GetNetAngle(), true);
+	mec_GyroTurnAbs(trk_GetNetAngle(), true);
 }
 
 task _PIDmecDrive(){
 	zeroDriveEncoders();
-	startTask(trk_tsk_Track);
-	trk_initEncoders(mec.leftEnc, mec.rightEnc);
+	startTask(trk_tsk_Track,25);
+	trk_initEncoders(mec.encLeft, mec.encRight);
 	mec.pidEnabled = true;
 	bool running = true;
 	while(running){
 		while(mec.pidEnabled){
 			if(vexRT[Btn7L] == 1){
 				faceNet();
+				mec.pidEnabled = true;
 			}
 			_mecDrive();
 			wait1Msec(20);
@@ -441,6 +449,8 @@ task _PIDmecDrive(){
 		wait1Msec(50);
 	}
 }
+
+
 
 void initMecDrive(DriveBase db){
 	mec.fl = db.fl;
@@ -454,7 +464,6 @@ void initMecDrive(DriveBase db){
 	mec.master = db.master;
 	mec.slave = db.slave;
 	mec.gyro = db.gyro;
-	mec.smartDrive = false;
 	//	writeDebugStreamLine("PRINTING %d %d %d %d", db.fl, db.fr, db.bl, db.br);
 	//	startTask(_mecDrive);
 	//PID, kp, ki, kd, epsilon, slew)

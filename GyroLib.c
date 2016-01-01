@@ -4,179 +4,98 @@
 #ifndef __GYROLIB__
 #define __GYROLIB__
 
-// Structure to hold global info for the gyro
-typedef struct {
-    tSensors port;
-    bool     valid;
-    float    angle;
-    float    abs_angle;
-    bool reset;
-    } gyroData;
 
-static  gyroData    theGyro = {in1, false, 0.0, 0.0};
+struct Gyro{
+	float angle, gyroOffset, gyroRead, rateOffset;
+  tSensors accelX;
+  tSensors accelY;
+	int sensorPort;
+};
+Gyro gyro;
 
 
-void GyroResetAngle(){
-    theGyro.reset = true;
-}
-
-
-
-void
-GyroDebug( int displayLine )
+float gyroGetRate()
 {
-    string str;
+	float scaleFactor = 1.511;
 
-    if( theGyro.valid )
-        {
-        // display current value
-        sprintf(str,"Gyro %5.1f   ", theGyro.angle );
-        displayLCDString(displayLine, 0, str);
-        }
-    else
-        displayLCDString(displayLine, 0, "Init Gyro.." );
+	// 1.1 mV/dps
+	float sensitivity = 0.0011;
+
+	//Voltage from gyro sensor is proportional to sensor read (0 to 4095) multiplied by a scale factor constant
+	float gyroVoltage = (float)SensorValue(port2) * ((float)5/(float)4095) / scaleFactor;
+	//writeDebugStreamLine("VOLTAGE %f    %f", gyroVoltage, SensorValue[port2]);
+	//Degrees per second = voltage / (volts/degrees per second) * constant
+	float rate = gyroVoltage/sensitivity;
+	return rate;
 }
 
-
-task GyroTask()
+//Return the calibrated and filtered rate of change that the gyro reads.
+//if the gyro reads 2 degrees per second or less, assume that it is noise and return 0
+float gyroGetFilteredRate()
 {
-    int     gyro_value;
-    int     gyro_error = 0;
-    int     lastDriftGyro = 0;
-
-    float   angle;
-    float   old_angle, delta_angle;
-
-    long    nSysTimeOffset;
-
-    // Gyro readings invalid
-    theGyro.valid = false;
-
-    // Cause the gyro to reinitialize (a theory anyway)
-    SensorType[theGyro.port] = sensorNone;
-
-    // Wait 1/2 sec
-    wait10Msec(50);
-
-    // Gyro should be motionless here
-    SensorType[theGyro.port] = sensorGyro;
-
-    // Wait 1/2 sec
-    wait10Msec(50);
-
-    // What is the current system timer
-    nSysTimeOffset = nSysTime;
-
-    // loop forever
-    while(true)
-        {
-        if(theGyro.reset){
-            SensorValue[theGyro.port] = 0;
-            gyro_error = 0;
-            lastDriftGyro = 0;
-            old_angle = 0;
-            angle = 0;
-            delta_angle = 0;
-            nSysTimeOffset = nSysTime;
-            theGyro.reset = false;
-        }
-        // get current gyro value (deg * 10)
-        gyro_value = SensorValue[theGyro.port];
-
-        // Filter drift when not moving
-        if( (nSysTime - nSysTimeOffset) > 250 )
-            {
-            if( abs( gyro_value - lastDriftGyro ) < 3 )
-                gyro_error += (lastDriftGyro - gyro_value);
-
-            lastDriftGyro = gyro_value;
-
-            nSysTimeOffset = nSysTime;
-            }
-
-        // Create float angle, remove offset
-        angle = (gyro_value + gyro_error)  / 10.0;
-
-        // normalize into the range 0 - 360
-        if( angle < 0 )
-            angle += 360;
-
-        // store in struct for others
-        theGyro.angle = angle;
-
-        // work out change from last time
-        delta_angle = angle - old_angle;
-        old_angle   = angle;
-
-        // fix rollover
-        if(delta_angle > 180)
-          delta_angle -= 360;
-        if(delta_angle < -180)
-          delta_angle += 360;
-
-        // store absolute angle
-        theGyro.abs_angle = theGyro.abs_angle + delta_angle;
-
-        // We can use the angle
-        theGyro.valid = true;
-
-        // Delay
-        wait1Msec( 20 );
-        }
+	float rate = gyroGetRate() - gyro.gyroOffset - gyro.rateOffset;
+	if(abs(rate) < 2)
+		return 0;
+	return rate;
 }
 
-/*-----------------------------------------------------------------------------*/
-/*                                                                             */
-/*      Initialize the Gyro on the given port                                  */
-/*                                                                             */
-/*-----------------------------------------------------------------------------*/
-
-void
-GyroInit( tSensors port  )
+//sample and offset the rate of change that the gyro detects.
+void gyroCalibrate()
 {
-    theGyro.port = port;
+	for(int i = 0; i < 10000; i++)
+	{
+		gyro.gyroOffset += gyroGetRate();
+	}
+	gyro.gyroOffset /= 10000;
 
-    StartTask( GyroTask, 30 );
+	for(int i = 0; i < 10000; i++)
+	{
+		gyro.rateOffset += gyroGetRate()- gyro.gyroOffset;
+	}
+	gyro.rateOffset /= 10000;
 }
 
-/*-----------------------------------------------------------------------------*/
-/*                                                                             */
-/*  Cause the gyro to be reinitialized by stopping and then restarting the     */
-/*  polling task                                                               */
-/*                                                                             */
-/*-----------------------------------------------------------------------------*/
-
-void
-GyroReinit()
+void gyroSetPort(int sensorPort)
 {
-    StopTask( GyroTask );
-    StartTask( GyroTask );
+	gyro.sensorPort = sensorPort;
 }
 
-/*-----------------------------------------------------------------------------*/
-/*                                                                             */
-/*  Functions to get the public parameters                                     */
-/*                                                                             */
-/*-----------------------------------------------------------------------------*/
-
-float
-GyroGetAngle()
+float gyroAddAngle(float dt)
 {
-    return( theGyro.angle );
+	gyro.angle += gyroGetFilteredRate() * dt;
+	return gyro.angle;
 }
-float
-GyroGetAbsAngle()
+
+void gyroResetAngle()
 {
-    return( theGyro.abs_angle );
+	gyro.angle = 0;
 }
 
-bool
-GyroGetValid()
-{
-    return( theGyro.valid );
+task GyroTask(){
+	gyroCalibrate();
+	long initTime = nPgmTime;
+	wait1Msec(20);
+	while(true){
+		float dTime = nPgmTime - initTime;
+		initTime = nPgmTime;
+		gyroAddAngle((float)dTime/(float)1000);
+		wait1Msec(20);
+	}
 }
 
 
+void GyroInit(int g, tSensors x, tSensors y){
+
+	gyro.sensorPort = g;
+	gyro.accelX = x;
+	gyro.accelY = y;
+	startTask(GyroTask, 20);
+}
+
+
+float GyroGetAngle(){
+	return gyro.angle;
+}
 
 
 #endif  //__GYROLIB__

@@ -147,7 +147,7 @@ task intakeControl(){
 		//autoshooter
 		if(vexRT[Btn7L] == 1){
 			//empty everything
-			autoShoot();
+
 		}
 
 		if(vexRT[Btn5D] == 1){
