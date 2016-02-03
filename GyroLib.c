@@ -1,101 +1,222 @@
 
-
 // Stop recursive includes
 #ifndef __GYROLIB__
 #define __GYROLIB__
 
+/*-----------------------------------------------------------------------------*/
+/** @file    gyroLib2.h
+  * @brief   VEX gyro wrapper functions for ROBOTC
+*//*---------------------------------------------------------------------------*/
 
-struct Gyro{
-	float angle, gyroOffset, gyroRead, rateOffset;
-  tSensors accelX;
-  tSensors accelY;
-	int sensorPort;
-};
-Gyro gyro;
+// Structure to hold global info for the gyro
+typedef struct _gyroData {
+    tSensors    port;           ///< analog port the gyro is connected to
+    bool        valid;          ///< indicates gyro is initialized
+    float       angle;          ///< angle in range 0 to 360 deg
+    float       abs_angle;      ///< absolute angle, both positive and negative
+    int         drift_error;    ///< accumulated error due to drift
+    } gyroData;
 
+// local storage for the gyro calculations
+static  gyroData    theGyro;
 
-float gyroGetRate()
+#define GYRO_DRIFT_THRESHOLD    3
+
+/*-----------------------------------------------------------------------------*/
+/** @brief display current gyro angle on the LCD for debug pruposes            */
+/*-----------------------------------------------------------------------------*/
+
+void
+GyroDebug( int displayLine )
 {
-	float scaleFactor = 1.511;
+    string str;
 
-	// 1.1 mV/dps
-	float sensitivity = 0.0011;
-
-	//Voltage from gyro sensor is proportional to sensor read (0 to 4095) multiplied by a scale factor constant
-	float gyroVoltage = (float)SensorValue(port2) * ((float)5/(float)4095) / scaleFactor;
-	//writeDebugStreamLine("VOLTAGE %f    %f", gyroVoltage, SensorValue[port2]);
-	//Degrees per second = voltage / (volts/degrees per second) * constant
-	float rate = gyroVoltage/sensitivity;
-	return rate;
+    if( theGyro.valid )
+        {
+        // display current value
+        sprintf(str,"Gyro %5.1f   ", theGyro.angle );
+        displayLCDString(displayLine, 0, str);
+        }
+    else
+        displayLCDString(displayLine, 0, "Init Gyro.." );
 }
 
-//Return the calibrated and filtered rate of change that the gyro reads.
-//if the gyro reads 2 degrees per second or less, assume that it is noise and return 0
-float gyroGetFilteredRate()
+/*-----------------------------------------------------------------------------*/
+/** @brief  Task that polls the Gyro and calculates the angle of rotation      */
+/*-----------------------------------------------------------------------------*/
+
+task GyroTask()
 {
-	float rate = gyroGetRate() - gyro.gyroOffset - gyro.rateOffset;
-	if(abs(rate) < 2)
-		return 0;
-	return rate;
+    int     gyro_value;
+    int     lastDriftGyro = 0;
+
+    float   angle;
+    float   old_angle = 0.0;
+    float   delta_angle = 0.0;
+
+    long    nSysTimeOffset;
+
+    // Gyro readings invalid
+    theGyro.valid = false;
+
+    // clear absolute
+    theGyro.abs_angle = 0;
+
+    // clear drift error
+    theGyro.drift_error = 0;
+
+    // Cause the gyro to reinitialize
+    SensorType[theGyro.port] = sensorNone;
+
+    // Wait 1/2 sec
+    wait1Msec(500);
+
+    // Gyro should be motionless here
+    SensorType[theGyro.port] = sensorGyro;
+
+    // Wait 1/2 sec
+    wait1Msec(500);
+
+    // Save the current system timer
+    nSysTimeOffset = nSysTime;
+
+    // loop forever
+    while(true)
+        {
+        // get current gyro value (deg * 10)
+        gyro_value = SensorValue[theGyro.port];
+
+        // Filter drift when not moving
+        // check this every 250mS
+        if( (nSysTime - nSysTimeOffset) > 250 )
+            {
+            if( abs( gyro_value - lastDriftGyro ) < GYRO_DRIFT_THRESHOLD )
+                theGyro.drift_error += (lastDriftGyro - gyro_value);
+
+            lastDriftGyro = gyro_value;
+
+            nSysTimeOffset = nSysTime;
+            }
+
+        // Create float angle, remove offset
+        angle = (gyro_value + theGyro.drift_error)  / 10.0;
+
+        // normalize into the range 0 - 360
+        if( angle < 0 )
+            angle += 360;
+
+        // store in struct for others
+        theGyro.angle = angle;
+
+        // work out change from last time
+        delta_angle = angle - old_angle;
+        old_angle   = angle;
+
+        // fix rollover
+        if(delta_angle > 180)
+          delta_angle -= 360;
+        if(delta_angle < -180)
+          delta_angle += 360;
+
+        // store absolute angle
+        theGyro.abs_angle = theGyro.abs_angle + delta_angle;
+
+        // We can use the angle
+        theGyro.valid = true;
+
+        // Delay
+        wait1Msec( 20 );
+        }
 }
 
-//sample and offset the rate of change that the gyro detects.
-void gyroCalibrate()
+/*-----------------------------------------------------------------------------*/
+/** @brief     Initialize the Gyro                                             */
+/** @param[in] port the analog port that the gyro is connected to              */
+/*-----------------------------------------------------------------------------*/
+void
+GyroInit( tSensors port = in1  )
 {
-	for(int i = 0; i < 10000; i++)
-	{
-		gyro.gyroOffset += gyroGetRate();
-	}
-	gyro.gyroOffset /= 10000;
+    theGyro.port  = port;
+    theGyro.valid = false;
+    theGyro.angle = 0.0;
+    theGyro.abs_angle = 0.0;
 
-	for(int i = 0; i < 10000; i++)
-	{
-		gyro.rateOffset += gyroGetRate()- gyro.gyroOffset;
-	}
-	gyro.rateOffset /= 10000;
+    startTask( GyroTask );
 }
 
-void gyroSetPort(int sensorPort)
+/*-----------------------------------------------------------------------------*/
+/** @brief Reinitialize the gyro task                                          */
+/*-----------------------------------------------------------------------------*/
+/** @details
+ *   Cause the gyro to be reinitialized by stopping and then restarting the
+ *   polling task
+ */
+void
+GyroReinit()
 {
-	gyro.sensorPort = sensorPort;
+    stopTask( GyroTask );
+    startTask( GyroTask );
 }
 
-float gyroAddAngle(float dt)
+/*-----------------------------------------------------------------------------*/
+/** @brief    Get the current gyro angle in degrees                            */
+/** @returns  gyro angle in the range 0 to 360 deg                             */
+/*-----------------------------------------------------------------------------*/
+float
+GyroGetAngle()
 {
-	gyro.angle += gyroGetFilteredRate() * dt;
-	return gyro.angle;
+    return( theGyro.angle );
 }
 
-void gyroResetAngle()
+/*-----------------------------------------------------------------------------*/
+/** @brief    Get the current gyro angle in radians                            */
+/** @returns  gyro angle in the range 0 to 2PI radians                         */
+/*-----------------------------------------------------------------------------*/
+float
+GyroAngleRadGet()
 {
-	gyro.angle = 0;
+    return( theGyro.angle / 180.0 * PI );
 }
 
-task GyroTask(){
-	gyroCalibrate();
-	long initTime = nPgmTime;
-	wait1Msec(20);
-	while(true){
-		float dTime = nPgmTime - initTime;
-		initTime = nPgmTime;
-		gyroAddAngle((float)dTime/(float)1000);
-		wait1Msec(20);
-	}
+/*-----------------------------------------------------------------------------*/
+/** @brief    Get the current absolute gyro angle                              */
+/** @returns  the accumuated absolute gyro angle in degrees                    */
+/*-----------------------------------------------------------------------------*/
+float
+GyroAngleAbsGet()
+{
+    return( theGyro.abs_angle );
 }
 
-
-void GyroInit(int g, tSensors x, tSensors y){
-
-	gyro.sensorPort = g;
-	gyro.accelX = x;
-	gyro.accelY = y;
-	startTask(GyroTask, 20);
+/*-----------------------------------------------------------------------------*/
+/** @brief    Get the validity of the gyro                                     */
+/** @returns  true if the gyro is initialized and returning valid data         */
+/*-----------------------------------------------------------------------------*/
+bool
+GyroValidGet()
+{
+    return( theGyro.valid );
 }
 
+/*-----------------------------------------------------------------------------*/
+/** @brief    ROBOTC gyro warning elination                                    */
+/*-----------------------------------------------------------------------------*/
+/** @details
+ * The ROBOTC warnings about unused functions drive me crazy, so we call
+ * everything here, including this function, to remove them
+ * do not use or call this function from your code !
+ */
 
-float GyroGetAngle(){
-	return gyro.angle;
+void
+GyroWarningEliminate()
+{
+    GyroDebug(0);
+    GyroReinit();
+    GyroAngleDegGet();
+    GyroAngleRadGet();
+    GyroAngleAbsGet();
+    GyroValidGet();
+    GyroWarningEliminate();
 }
-
 
 #endif  //__GYROLIB__

@@ -65,11 +65,24 @@ void _setRightDrivePow(int power){
 	setLinMotorPow(mec.mr,power);
 }
 
+float _getLeftEnc(){
+	return -SensorValue[mec.encLeft];
+}
+
+float _getRightEnc(){
+	return -SensorValue[mec.encRight];
+}
+
+
+float GYRO_KP = 2;
+float GYRO_KI = 3;//1.5;
+float GYRO_KD = 0.34; //0.3
+float GYRO_INTLIM = 1270;
 
 
 void mec_GyroTurnAbs(int degrees, bool escapable){
-	pidInit(mec.gyroPID, 1.9333,1.5,0.3,0,1270);
-	pidInit(mec.slave, 	0.45,0,0,0,1270);
+	pidInit(mec.gyroPID, GYRO_KP,GYRO_KI,GYRO_KD,0,GYRO_INTLIM);
+	pidInit(mec.slave, 	0.5,0,0,0,1270);
 	pidReset(mec.gyroPID);
 	pidReset(mec.slave);
 	mec.pidEnabled = false;
@@ -84,17 +97,15 @@ void mec_GyroTurnAbs(int degrees, bool escapable){
 
 	float errorThreshold = 0.6; //tolerance of 0.2 degrees
 
-	float initTicksL = SensorValue[mec.encLeft];
-	float initTicksR = SensorValue[mec.encRight];
+	float initTicksL = _getLeftEnc();
+	float initTicksR = _getRightEnc();
 
-	int integralLimit = 15 / mec.gyroPID.kI;
+	int integralLimit = 25 / mec.gyroPID.kI;
 	int escapeThresh = 30;
 	while(!targetReached){
 
 		//deal with input values
 		float error = setPoint - GyroGetAngle();
-		writeDebugStreamLine("%f", GyroGetAngle());
-		writeDebugStreamLine("init error: %f", error);
 		if(abs(error) > abs( setPoint - (GyroGetAngle() + 360))){
 				error = setPoint - (GyroGetAngle() + 360) ;
 		}
@@ -103,7 +114,7 @@ void mec_GyroTurnAbs(int degrees, bool escapable){
 		}
 
 
-		float slaveErr = (-(SensorValue[mec.encLeft] - initTicksL)) + (SensorValue[mec.encRight] - initTicksR);
+		float slaveErr = (-(_getLeftEnc() - initTicksL)) - (_getRightEnc() - initTicksR);
 		float slaveOut = pidExecute(mec.slave, slaveErr);
 		float driveOut = pidExecute(mec.gyroPID,error);
 
@@ -122,18 +133,26 @@ void mec_GyroTurnAbs(int degrees, bool escapable){
 	//		driveOut = driveOut / n;
 	//		slaveOut = slaveOut / n;
 	//	}
-		int minVal = 15;
+		int minVal = 13;
 		if(abs(error) > errorThreshold){
 			atTargetTime = nPgmTime;
-			driveOut += minVal * driveOut / abs(driveOut);
+			if(abs(driveOut) < minVal){
+				if(driveOut != 0){
+					driveOut += minVal * driveOut / abs(driveOut);
+				}
+			}
 		}
+
+
+
 
 		if(abs(driveOut) > 100){
 			driveOut = 100 * driveOut / abs(driveOut);
 		}
-		_setLeftDrivePow(driveOut + slaveOut);
+		_setLeftDrivePow((driveOut + slaveOut));
 		_setRightDrivePow(-(driveOut - slaveOut));
-		printPIDDebug(mec.slave);
+		printPIDDebug(mec.gyroPID);
+
 
 		if(nPgmTime - atTargetTime > 250){
 			targetReached = true;
@@ -171,23 +190,20 @@ void mec_GyroTurnRel(int degrees){
 	mec_GyroTurnAbs(GyroGetAngle() + degrees);
 }
 
-void enableGyro(){
-	//GyroInit(mec.gyro, xAccel, yAccel);
-}
 
 
 
 //returns speed of drive in feet/s
 float mec_getLeftVelocity(float dTime, int initEnc){
 	if(dTime != 0){
-	return ((SensorValue[mec.encLeft] - initEnc) / dTime) / TICKS_PER_FEET;
+	return ((_getLeftEnc() - initEnc) / dTime) / TICKS_PER_FEET;
 }
 return 0;
 }
 
 float mec_getRightVelocity(float dTime, int initEnc){
 	if(dTime != 0){
-	return ((SensorValue[mec.encRight] - initEnc) / dTime) / TICKS_PER_FEET;
+	return ((_getRightEnc() - initEnc) / dTime) / TICKS_PER_FEET;
 }
 return 0;
 }
@@ -196,6 +212,8 @@ return 0;
 float util_calculatePredVel(float initSpeed, float a, float d){
 	return sqrt(initSpeed * initSpeed + 2 * a * d);
 }
+
+
 
 void mec_tmpDriveInches(float setpoint, float maxAccel, float maxSpeed){
 	//first generate path to the middle of the setPoint
@@ -282,10 +300,19 @@ void mec_tmpDriveInches2(float setpoint, float maxAccel, float maxSpeed){
 	}
 }
 
+
+
+
+float _DRIVE_KP = 0.5;
+float _DRIVE_KI = 0.3;
+float _DRIVE_KD = 0.16;
+
+float _SLAVE_KP = 0.3;
+
 void mec_driveInches(float inches, int maxSpeed,int expiryms){
 	//def constants
-	pidInit(mec.master, 0.5,0.3,0.2,0,1270);
-	pidInit(mec.slave, 0.3,0,0,0,1270);
+	pidInit(mec.master, _DRIVE_KP,_DRIVE_KI,_DRIVE_KD,0,1270);
+	pidInit(mec.slave, _SLAVE_KP,0,0,0,1270);
 	pidReset(mec.master);
 	pidReset(mec.slave);
 
@@ -299,14 +326,14 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms){
 	long timeInit = nPgmTime;
 	long atTargetTime = nPgmTime;
 	long expTime = nPgmTime + expiryms;
-	float errorThreshold = 0.5 * TICKS_PER_INCHES; //tolerance of 0.2 inches
+	float errorThreshold = 0.3 * TICKS_PER_INCHES; //tolerance of 0.2 inches
 
-	int initDriveL = SensorValue[mec.encLeft];
-	int initDriveR = SensorValue[mec.encRight];
+	int initDriveL = _getLeftEnc();
+	int initDriveR = _getRightEnc();
 	while(!targetReached){
 		//left encoder is master
-		float error = setPoint - (SensorValue[mec.encLeft] - initDriveL);
-		float slaveErr = (SensorValue[mec.encLeft] - initDriveL) + (SensorValue[mec.encRight] - initDriveR);
+		float error = setPoint - ( _getLeftEnc() - initDriveL);
+		float slaveErr = (_getLeftEnc() - initDriveL) - (_getRightEnc()- initDriveR);
 
 		if(sgn(mec.master.error) != sgn(mec.master.errorSum)){
 				mec.master.errorSum = 0;
@@ -328,7 +355,7 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms){
 		if(abs(error) > errorThreshold){
 			atTargetTime = nPgmTime;
 		}
-		if(nPgmTime - atTargetTime > 150){
+		if(nPgmTime - atTargetTime > 400){
 			targetReached = true;
 			_setLeftDrivePow(0);
 			_setRightDrivePow(0);
@@ -343,7 +370,7 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms){
 }
 
 void mec_driveInches(float inches){
-	mec_driveInches(inches,70,99999);
+	mec_driveInches(inches,110,99999);
 }
 
 
@@ -433,14 +460,14 @@ void faceNet(){
 
 task _PIDmecDrive(){
 	zeroDriveEncoders();
-	startTask(trk_tsk_Track,25);
+	//startTask(trk_tsk_Track,25);
 	trk_initEncoders(mec.encLeft, mec.encRight);
 	mec.pidEnabled = true;
 	bool running = true;
 	while(running){
 		while(mec.pidEnabled){
 			if(vexRT[Btn7L] == 1){
-				faceNet();
+			//	faceNet();
 				mec.pidEnabled = true;
 			}
 			_mecDrive();

@@ -2,7 +2,7 @@
 #ifndef FlyControl.c
 #define FlyControl.c
 
-#define FW_LOOP_SPEED	100
+#define FW_LOOP_SPEED	20
 
 
 #include "Utils.c"
@@ -10,14 +10,14 @@
 #include "MecDrive.c"
 
 
-int SKILLS_RPM = 1950; //1950
-int SKILLS_POW = 55;
-const int SHORT_RPM = 1620;
-const int SHORT_POW = 35;
-const int MED_RPM = 1950;
-const int MED_POW = 45;
-const int LONG_RPM  = 2520;//2680;//2950;
-const int HIGH_POW = 65;//75;
+int SKILLS_RPM = 2000; //1950
+int SKILLS_POW = 65;
+int SHORT_RPM = 1660;
+int SHORT_POW = 40;
+int MED_RPM = 2000;
+int MED_POW = 50;
+int LONG_RPM  = 2420;//2680;//2950;
+int HIGH_POW = 76;//75;
 
 
 typedef struct {
@@ -107,8 +107,10 @@ void _updateFlyWheel(int power){
 long	nSysTime_last;
 long	encoder_counts;
 long	encoder_counts_last;
+
 float FwCalculateSpeed()
 {
+
 	int			delta_ms;
 	int			delta_enc;
 	encoder_counts = -SensorValue[_fly.enc] ;
@@ -116,7 +118,9 @@ float FwCalculateSpeed()
 	nSysTime_last = nSysTime;
 	delta_enc = (encoder_counts - encoder_counts_last);
 	encoder_counts_last = encoder_counts;
-	return (1000.0 / delta_ms) * delta_enc;
+	float newSpeed = (1000.0 / delta_ms) * delta_enc;
+	_fly.currSpeed = (_fly.currSpeed * 0.7) + newSpeed * 0.3;
+	return _fly.currSpeed;
 }
 
 
@@ -245,8 +249,8 @@ task flw_task_PIDCntrl(){
 task flw_tsk_FeedForwardCntrl(){
 	pidReset(_fly.flyPID);
 	//TRY: fairly good fast recovery
-	//prev P 0.5
-	pidInit(_fly.flyPID, 0.65 , 0.1, 0, 0, 9999);
+	//prev P 0.
+	pidInit(_fly.flyPID, 0.7, 0.1, 0, 0, 9999);
 
 	//pidInit(_fly.flyPID, 0.15, 0.05, 0, 100, 9999);
 
@@ -256,14 +260,15 @@ task flw_tsk_FeedForwardCntrl(){
 	//dislike slow
 	//pidInit(_fly.flyPID, 0.2, 0.001, 0, 100, 9999);
 
-	int integralLimit = 40 / _fly.flyPID.kI;
+	int integralLimit = 30 / _fly.flyPID.kI;
 	float output = 0;
 	float initTime = nPgmTime;
 	//basically for this we need a guess motor power
 	while(true){
 
 		fw_ButtonControl();
-
+		writeDebugStreamLine("%d", motor[mFly1]);
+		printPIDDebug(_fly.flyPID);
 		//we do not want to zero our error sum when we cross
 		if(abs(_fly.flyPID.errorSum) > integralLimit){
 			_fly.flyPID.errorSum = integralLimit * _fly.flyPID.errorSum/(abs(_fly.flyPID.errorSum));
@@ -279,7 +284,7 @@ task flw_tsk_FeedForwardCntrl(){
 		if(coeff < 1){
 			coeff = 1;
 		}
-		//
+
 		output = _fly.pred + ((outVal) * (coeff));
 
 		if(output < 0){
@@ -327,12 +332,16 @@ task flw_task_bangbang(){
 
 
 void initFlyWheel(Fw_Controller* initMotors){
+	_fly.currSpeed = 0;
 	_fly = *initMotors;
 	_fly.f1 = initMotors->f1;
 	_fly.f2 = initMotors->f2;
 	_fly.enc = initMotors->enc;
 	//writeDebugStreamLine("FLY %d %d %d %d", _fly.f1,_fly.f2, _fly.f3, _fly.f4);
 	startTask(flw_tsk_FeedForwardCntrl,20);
+
+
+
 	//startTask(flw_task_bangbang,20);
 	//startTask(flw_task_PIDCntrl, 20);
 }

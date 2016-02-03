@@ -47,8 +47,11 @@ bool ballAtLift(){
 	return SensorValue[_intakeController.liftSensor] < _ballThresh;
 }
 
+
+
+const int ultraThresh = 10;
 bool ballAtOuter(){
-	return SensorValue[_intakeController.outerSensor] < _ballThresh;
+	return SensorValue[_intakeController.outerSensor] <= ultraThresh;
 }
 
 int __intakeController.ballCount = 0;
@@ -112,9 +115,34 @@ void _decrementBallCount(){
 	}
 }
 
-void ink_fireWhenReady(int threshold){
 
+void ink_adjustFire(int threshold){
+	int temp = _fly.pred;
+	if(abs(_fly.flyPID.error) < threshold){
+				driveIntake(intakeDriveTicks);
+				if(_intakeController.ballCount == 1){
+						driveIntake(intakeDriveTicks);
+				}
+				if(_intakeController.ballCount != 0){
+					_intakeController.ballCount--;
+				}
+				_fly.pred = 127;
+
+	}
+	autoIntake();
+	wait1Msec(200);
+	_fly.pred = temp;
+}
+
+
+void ink_fireWhenReady(int threshold){
+		//ink_adjustFire(threshold);
 		if(abs(_fly.flyPID.error) < threshold){
+				wait1Msec(30);
+				if(abs(_fly.flyPID.error) < threshold){
+					writeDebugStreamLine("shot error %d",_fly.flyPID.error);
+
+
 				driveIntake(intakeDriveTicks);
 				if(_intakeController.ballCount == 1){
 						driveIntake(intakeDriveTicks);
@@ -123,6 +151,7 @@ void ink_fireWhenReady(int threshold){
 					_intakeController.ballCount--;
 				}
 	}
+}
 	autoIntake();
 }
 
@@ -177,7 +206,7 @@ task intakeControl(){
 		else if(vexRT[Btn6D] == 1){
 			//override
 			while(vexRT[Btn6D] == 1){
-				ink_fireWhenReady(30);
+				ink_fireWhenReady(20);
 				wait1Msec(20);
 			}
 		}
