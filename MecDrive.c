@@ -1,6 +1,6 @@
 #ifndef MecDrive.c
 #define MecDrive.c
-#define JOYSTICK_DEADZONE  13
+#define JOYSTICK_DEADZONE  5
 #include "Utils.c"
 #include "PIDController.h"
 #include "GyroLib.c"
@@ -74,15 +74,16 @@ float _getRightEnc(){
 }
 
 
-float GYRO_KP = 2;
-float GYRO_KI = 3;//1.5;
-float GYRO_KD = 0.34; //0.3
+float GYRO_KP = 2.4;//2;
+float GYRO_KI = 2;//3;
+float GYRO_KD = 0.25; //0.34
 float GYRO_INTLIM = 1270;
+float GYRO_ERROR_THRESH = 0.7;
 
 
 void mec_GyroTurnAbs(int degrees, bool escapable){
 	pidInit(mec.gyroPID, GYRO_KP,GYRO_KI,GYRO_KD,0,GYRO_INTLIM);
-	pidInit(mec.slave, 	0.5,0,0,0,1270);
+	pidInit(mec.slave, 	0.3,0,0,0,1270);
 	pidReset(mec.gyroPID);
 	pidReset(mec.slave);
 	mec.pidEnabled = false;
@@ -95,12 +96,12 @@ void mec_GyroTurnAbs(int degrees, bool escapable){
 	long timeInit = nPgmTime;
 	long atTargetTime = nPgmTime;
 
-	float errorThreshold = 0.6; //tolerance of 0.2 degrees
+	float errorThreshold = 0.5; //tolerance of 0.2 degrees
 
 	float initTicksL = _getLeftEnc();
 	float initTicksR = _getRightEnc();
 
-	int integralLimit = 25 / mec.gyroPID.kI;
+	int integralLimit = 15 / mec.gyroPID.kI;
 	int escapeThresh = 30;
 	while(!targetReached){
 
@@ -151,7 +152,7 @@ void mec_GyroTurnAbs(int degrees, bool escapable){
 		}
 		_setLeftDrivePow((driveOut + slaveOut));
 		_setRightDrivePow(-(driveOut - slaveOut));
-		printPIDDebug(mec.gyroPID);
+
 
 
 		if(nPgmTime - atTargetTime > 250){
@@ -215,96 +216,10 @@ float util_calculatePredVel(float initSpeed, float a, float d){
 
 
 
-void mec_tmpDriveInches(float setpoint, float maxAccel, float maxSpeed){
-	//first generate path to the middle of the setPoint
-	pidInit(mec.master,80,0,0,0,1300);
-	pidInit(mec.slave,80,0,0,0,1300);
-	float kV = 80;
-	float kA = 80;
-	float timeToMax = maxSpeed / maxAccel;
-	float dToMax = 0.5 * maxAccel * timeToMax * timeToMax;
+const int DRIVE_SAT_TIME = 200;
 
-	bool atTarget = false;
-
-	long initTime = nPgmTime;
-	int leftenc_init = SensorValue[mec.encLeft];
-	int masterInit = SensorValue[mec.encLeft];
-	int rightenc_init = SensorValue[mec.encRight];
-	float maxReachedVel = 0;
-	while(!atTarget){
-		//velocity in feet/s
-		float pred_vel = 0;
-		float pred_accl = 0;
-
-		float curr_velocity = mec_getLeftVelocity(nPgmTime - initTime, leftenc_init);
-		leftenc_init = SensorValue[mec.encLeft];
-		float curr_slave_vel = mec_getRightVelocity(nPgmTime - initTime, rightenc_init);
-		rightenc_init = SensorValue[mec.encRight];
-		initTime = nPgmTime;
-		float curr_distance = (SensorValue[mec.encLeft] - masterInit) / TICKS_PER_FEET;
-
-
-
-		if(curr_distance < setpoint / 2){
-			//if we are before halfway go full accel till max speed
-			if(abs(curr_velocity) >= abs(maxSpeed)){
-				pred_accl = 0;
-				pred_vel = maxSpeed;
-				maxReachedVel = maxSpeed;
-			}
-			else{
-				pred_accl = maxAccel;
-				pred_vel = util_calculatePredVel(0,maxAccel,curr_distance);
-				maxReachedVel = curr_velocity;
-			}
-		} else{
-			//if dToMax is greater than the setpoint than we deccel right away
-			if(setpoint/2 - dToMax < 0){
-				pred_vel = util_calculatePredVel(maxReachedVel,-maxAccel,curr_distance - ((setpoint/2)));
-				pred_accl = -maxAccel;
-			}
-			else if(curr_distance > dToMax + setPoint/2){
-				//time to wait is equal to
-				pred_vel = util_calculatePredVel(maxReachedVel,-maxAccel,curr_distance - (dToMax + (setpoint/2)));
-			}
-			else{
-				pred_vel = maxSpeed;
-				pred_accl = 0;
-			}
-		}
-
-		//next step is to calculate the velocity we should be traveling at and the acceleration we should be at
-
-		int driveOut = pidExecute(mec.master,pred_vel - curr_velocity) + kV * pred_vel + kA * pred_accl;
-		int slaveOut = pidExecute(mec.slave,curr_velocity - curr_slave_vel);
-		_setLeftDrivePow(driveOut + slaveOut);
-		_setRightDrivePow(driveOut - slaveOut);
-			writeDebugStreamLine("%f %f %f %f", curr_distance,pred_vel,curr_velocity, pred_accl);
-		wait1Msec(100);
-	}
-}
-
-void mec_tmpDriveInches2(float setpoint, float maxAccel, float maxSpeed){
-	float tend = maxSpeed / maxAccel;
-	long initTime = nPgmTime;
-	float x;
-	float v;
-	while(initTime + tend > nPgmTime){
-		x = 0.5 * maxAccel * tend * tend;
-		v = maxAccel * tend;
-	}
-	initTime += tend;
-	while(initTime + (setpoint/maxSpeed) > nPgmTime){
-		x = 0.5 * maxSpeed * maxSpeed / maxAccel + maxSpeed * ((initTime + (nPgmTime - initTime) - maxSpeed / maxAccel);
-		v = maxSpeed;
-	}
-}
-
-
-
-
-float _DRIVE_KP = 0.5;
-float _DRIVE_KI = 0.3;
+float _DRIVE_KP = 0.3;
+float _DRIVE_KI = 0.2;
 float _DRIVE_KD = 0.16;
 
 float _SLAVE_KP = 0.3;
@@ -316,7 +231,7 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms){
 	pidReset(mec.master);
 	pidReset(mec.slave);
 
-	int integralLimit = 40 / mec.master.ki;
+	int integralLimit = 25 / mec.master.ki;
 
 	//turn off pid task
 	mec.pidEnabled = false;
@@ -326,7 +241,7 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms){
 	long timeInit = nPgmTime;
 	long atTargetTime = nPgmTime;
 	long expTime = nPgmTime + expiryms;
-	float errorThreshold = 0.3 * TICKS_PER_INCHES; //tolerance of 0.2 inches
+	float errorThreshold = 0.7 * TICKS_PER_INCHES; //tolerance of 0.2 inches
 
 	int initDriveL = _getLeftEnc();
 	int initDriveR = _getRightEnc();
@@ -342,7 +257,7 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms){
 			mec.master.errorSum = mec.master.errorSum > 0 ?  integralLimit : -integralLimit;
 		}
 		float driveOut = pidExecute(mec.master,error);
-		printPIDDebug(mec.master);
+
 		float slaveOut = pidExecute(mec.slave, slaveErr);
 
 		//we need to add a special case in case driveOut is saturated
@@ -355,7 +270,7 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms){
 		if(abs(error) > errorThreshold){
 			atTargetTime = nPgmTime;
 		}
-		if(nPgmTime - atTargetTime > 400){
+		if(nPgmTime - atTargetTime > DRIVE_SAT_TIME){
 			targetReached = true;
 			_setLeftDrivePow(0);
 			_setRightDrivePow(0);
@@ -372,6 +287,78 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms){
 void mec_driveInches(float inches){
 	mec_driveInches(inches,110,99999);
 }
+
+void mec_driveInchesTwoStage(float distance, float slowDist, int maxSpeed, int secondMax, int expiryms){
+	pidInit(mec.master, _DRIVE_KP,_DRIVE_KI,_DRIVE_KD,0,1270);
+	pidInit(mec.slave, _SLAVE_KP,0,0,0,1270);
+	pidReset(mec.master);
+	pidReset(mec.slave);
+
+	int integralLimit = 40 / mec.master.ki;
+
+	//turn off pid task
+	mec.pidEnabled = false;
+	bool targetReached = false;
+
+	float setPoint = distance * TICKS_PER_INCHES;
+	long timeInit = nPgmTime;
+	long atTargetTime = nPgmTime;
+	long expTime = nPgmTime + expiryms;
+	float errorThreshold = 0.2 * TICKS_PER_INCHES; //tolerance of 0.2 inches
+
+	int initDriveL = _getLeftEnc();
+	int initDriveR = _getRightEnc();
+	while(!targetReached){
+		//left encoder is master
+		float error = setPoint - ( _getLeftEnc() - initDriveL);
+		float slaveErr = (_getLeftEnc() - initDriveL) - (_getRightEnc()- initDriveR);
+
+		if(sgn(mec.master.error) != sgn(mec.master.errorSum)){
+				mec.master.errorSum = 0;
+		}
+		if(abs(mec.master.errorSum) > integralLimit){
+			mec.master.errorSum = mec.master.errorSum > 0 ?  integralLimit : -integralLimit;
+		}
+		float driveOut = pidExecute(mec.master,error);
+
+		float slaveOut = pidExecute(mec.slave, slaveErr);
+
+		//we need to add a special case in case driveOut is saturated
+
+
+		if((distance - slowDist) * TICKS_PER_INCHES > (_getLeftEnc() - initDriveL)){
+
+			if(abs(driveOut) > secondMax){
+				driveOut = secondMax * driveOut / abs(driveOut);
+			}
+		}
+
+		if(abs(driveOut) > maxSpeed){
+
+			driveOut = maxSpeed * (driveOut/abs(driveOut));
+		}
+		_setLeftDrivePow(driveOut - slaveOut);
+		_setRightDrivePow(driveOut + slaveOut);
+
+		if(abs(error) > errorThreshold){
+			atTargetTime = nPgmTime;
+		}
+		if(nPgmTime - atTargetTime > DRIVE_SAT_TIME){
+			targetReached = true;
+			_setLeftDrivePow(0);
+			_setRightDrivePow(0);
+			break;
+		}
+		if(nPgmTime >= expTime){
+			writeDebugStreamLine("TARGET NOT REACHED");
+			break;
+		}
+	}
+	mec.pidEnabled = true;
+}
+
+
+
 
 
 //prints encoder values for left and right
@@ -397,7 +384,7 @@ void printGyroPIDDebug(){
 
 void _mecDrive(){
 		int x1 = vexRT[Ch4];
-		int y1 = vexRT[Ch3];
+		int y1 = 0;//vexRT[Ch3];
 		int x2 = vexRT[Ch1];
 		int y2 = vexRT[Ch2];
 
@@ -412,14 +399,22 @@ void _mecDrive(){
 		if(x1!=0){
 
 
-			x1 = ((x1 * x1 * x1/abs(x1)) / (127)) / 2;
+			x1 = (x1 * x1 * x1 ) / (127 * 127);//((x1 * x1 * x1 / abs(x1) ) / (127));
 
+			if(abs(y1) > 40){
+				x1 = 20 * y1 / abs(y1);
+				y1 = 0;
+			}
+			else{
+				y1 = 0;
+			}
+		/**
 			if(abs(y2) > 80){
 				x1 = oldSign > 0 ? x1 + 55 : x1 - 55;
 			}
 			else{
-				if(abs(x1) < 60){
-					x1 = oldSign > 0 ? x1 + 20 : x1 - 20;
+				if(abs(x1) < 70){
+					x1 = oldSign > 0 ? x1 + 13 : x1 - 13;
 				}
 				else{
 					x1 = oldSign > 0 ? x1 + 60 : x1 - 60;
@@ -432,7 +427,7 @@ void _mecDrive(){
 			}
 			else{
 				y1 = 0;
-			}
+			} **/
 		}
 		float leftOut = y2 + x1 + y1;
 		float rightOut = y2 - x1 - y1;
@@ -504,7 +499,7 @@ void mec_StartTeleop(){
 }
 
 
-void stopPIDDrive(){
+void mec_StopTeleop(){
 	stopTask(_PIDmecDrive);
 }
 #endif

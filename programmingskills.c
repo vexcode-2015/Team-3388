@@ -1,14 +1,15 @@
 #pragma config(UART_Usage, UART1, uartVEXLCD, baudRate19200, IOPins, None, None)
 #pragma config(UART_Usage, UART2, uartNotUsed, baudRate4800, IOPins, None, None)
-#pragma config(Sensor, in2,    gyroDrive,      sensorNone)
+#pragma config(Sensor, in1,    gyroDrive,      sensorAnalog)
 #pragma config(Sensor, in3,    lfIntake,       sensorLineFollower)
-#pragma config(Sensor, in4,    lfOuter,        sensorLineFollower)
+#pragma config(Sensor, in5,    potColour,      sensorPotentiometer)
+#pragma config(Sensor, in6,    potTile,        sensorPotentiometer)
 #pragma config(Sensor, dgtl1,  encLeftDr,      sensorQuadEncoder)
 #pragma config(Sensor, dgtl5,  encFlywheel,    sensorQuadEncoder)
 #pragma config(Sensor, dgtl7,  encIntake,      sensorQuadEncoder)
-#pragma config(Sensor, dgtl10, statusLightRed, sensorDigitalOut)
+#pragma config(Sensor, dgtl9,  ultraIntake,    sensorSONAR_cm)
 #pragma config(Sensor, dgtl11, encRightDr,     sensorQuadEncoder)
-#pragma config(Motor,  port1,           mIntake,       tmotorVex393HighSpeed_HBridge, openLoop, reversed)
+#pragma config(Motor,  port1,           mIntake,       tmotorVex393HighSpeed_HBridge, openLoop)
 #pragma config(Motor,  port2,           mFly1,         tmotorVex393TurboSpeed_MC29, openLoop)
 #pragma config(Motor,  port3,           mFly2,         tmotorVex393TurboSpeed_MC29, openLoop, reversed)
 #pragma config(Motor,  port4,           mDrMr,         tmotorVex393HighSpeed_MC29, openLoop, reversed)
@@ -24,6 +25,7 @@
 #include "FlyControl.c"
 #include "Utils.c"
 #include "IntakeControl.c"
+#include "Auto.c"
 #pragma platform(VEX2)
 #pragma competitionControl(Competition)
 #pragma autonomousDuration(15)
@@ -44,64 +46,31 @@ void motorTest(){
 
 void pre_auton()
 {
-	bStopTasksBetweenModes = false;
+	//bStopTasksBetweenModes = false;
 	dr.fl = mDrFl; dr.fr = mDrFr; dr.bl = mDrBl;	dr.br = mDrBr; dr.ml = mDrMl; dr.mr = mDrMr;
 	dr.gyro = gyroDrive; dr.encLeft = encLeftDr; dr.encRight = encRightDr;
 
-	IntakeInit(mIntake, mIntake2, lfIntake, lfOuter, encIntake);
+	IntakeInit(mIntake, mIntake2, lfIntake, ultraIntake, encIntake);
 	initMecDrive(dr);
 
 	fly.f1 = mFly1; fly.f2 = mFly2;
 	fly.enc = encFlywheel;
 	autoNum = 0;
 	//autoNum = readAutoNum();
-	if (!(nVexRCReceiveState & vrDisabled)){
-		break;
-	}
+
 	printCalibratingGyro();
-	GyroInit(gyroDrive);
+	GyroInit(in1);
+
 	wait1Msec(3000);
 
-
-	while((nVexRCReceiveState & vrDisabled)){
-		printBatteryToLCD();
-	}
+//	while((nVexRCReceiveState & vrDisabled)){
+//		printBatteryToLCD();
+//	}
 }
 	bool redSide = true;
 
 task autonomous()
 {
-	bStopTasksBetweenModes = true;
-	initFlyWheel(fly);
-	fw_skillSpeed();
-
-	///fw_fullCourtSpeed();
-	mec_GyroTurnRel(-3);
-	long switchTime = nPgmTime + 20000;
-	while(nPgmTime <  switchTime){
-		ink_fireWhenReady(50);
-		string timeLeft;
-		displayLCDString(0, 0, "Swap: ");
-		sprintf(timeLeft, "%d", switchTime - nPgmTime);
-		displayNextLCDString(timeLeft);
-	}
-	startTask(intakeControl);
-	mec_GyroTurnAbs(-90);
-	mec_driveInches(-115,80,9999);
-	mec_GyroTurnAbs(5);
-	stopTask(intakeControl);
-	while(true){
-		ink_fireWhenReady(50);
-
-	}
-
-//	fw_skillSpeed();
-	stopTask(intakeControl);
-	while(true){
-		ink_fireWhenReady(50);
-	}
-	//mec_tmpDriveInches(1,0.2,1);
-
 
 }
 
@@ -117,33 +86,38 @@ void driveTesting(){
 }
 
 
-task usercontrol()
+void testFlyMotors(){
+	motor[mFly1]
+}
+
+
+task usercontrol ()
 {
-	setStatusLight(statusLightRed);
-	GyroResetAngle();
+	//GyroResetAngle();
 	initFlyWheel(fly);
 	initMecDrive(dr);
 	mec_StartTeleop();
 	startTask(intakeControl,3);
 
-	while(true)
+	 while(true)
 	{
+
 	//	_mecDrive();
-		//driveTesting();
+	//driveTesting();
 
 	//writeDebugStreamLine("%f", _fly.flyPID.kP);
 
-		//writeDebugStreamLine("%f, \coeff %f  %f SETTLE TIME %f", curr, coeff, Y, nSysTime);
-		//writeDebugStreamLine("%f", GyroGetAngle());
+	//writeDebugStreamLine("%f, \coeff %f  %f SETTLE TIME %f", curr, coeff, Y, nSysTime);
+	//writeDebugStreamLine("%f", GyroGetAngle());
 	//printPIDDebug(mec.slave);
 	//writeDebugStreamLine("GYRO ANGLE : %f", GyroGetAngle());
-	//writeDebugStreamLine("%f", motor[mFly1]);
-//printPIDDebug(mec.master);
-//	writeDebugStreamLine("%f", _intakeController.ballCount);
-//	writeDebugStreamLine("%f : %f", curr, motor[mFly1]);
+
+	//printPIDDebug(mec.master);
+	//	writeDebugStreamLine("%f", _intakeController.ballCount);
 
 
-	printPIDDebug(_fly.flyPID);
+
+	//printPIDDebug(_fly.flyPID);
 
 	/**	long init = nPgmTime;
 		if(abs(_fly.flyPID.error) > 200){
@@ -154,6 +128,6 @@ task usercontrol()
 		}**/
 		//	writeDebugStreamLine("%f, %f  %f",error, nAvgBatteryLevel, Y);
 		//writeDebugStreamLine("_fly.currSpeed%f, set %f", FwCalculateSpeed(), _setRPM);
-		wait1Msec(50);
+		wait1Msec(200);
 	}
 }

@@ -55,12 +55,17 @@ void pre_auton()
 
 	fly.f1 = mFly1; fly.f2 = mFly2;
 	fly.enc = encFlywheel;
+	initFlyWheel(fly);
+
 	autoNum = 0;
 	//autoNum = readAutoNum();
 
+
+
+
 	printCalibratingGyro();
 	GyroInit(in1);
-
+	bStopTasksBetweenModes = false;
 	wait1Msec(3000);
 
 //	while((nVexRCReceiveState & vrDisabled)){
@@ -71,11 +76,15 @@ void pre_auton()
 
 task autonomous()
 {
-	initFlyWheel(fly);
+	stopTask(usercontrol);
+	mec_StopTeleop();
+	fw_startFlyControl();
+	GyroZeroAbs();
+
 	int colourThresh = 2000;
 
 	bool isRed = false;
-	if(SensorValue[potColour] < colourThresh ){
+	if(SensorValue[potColour] > colourThresh ){
 		writeDebugStreamLine("auto red detected");
 		isRed = true;
 	}
@@ -85,7 +94,7 @@ task autonomous()
 
 	int tileThresh = 2000;
 	bool isOutside = true;
-	if(SensorValue[potTile] > tileThresh){
+	if(SensorValue[potTile] < tileThresh){
 			writeDebugStreamLine("auto inside detected");
 		isOutside = false;
 	}
@@ -93,15 +102,12 @@ task autonomous()
 		writeDebugStreamLine("auto outside detected");
 	}
 
-	if(isOutside){
-
-		auto_rout_facingStack(isRed);
-
-		//autoTesting();
+	if(SensorValue[potColour] > 1000 && SensorValue[potColour] < 3000){
+		auto_rout_skills();
+	}else{
+		auto_rout_getMidBalls(isOutside,isRed);
 	}
 	//mec_tmpDriveInches(1,0.2,1);
-
-
 }
 
 
@@ -116,20 +122,31 @@ void driveTesting(){
 }
 
 
-void testFlyMotors(){
-	motor[mFly1]
+
+
+
+void utl_fw_printRecovery(){
+	long init = nPgmTime;
+	if(abs(_fly.flyPID.error) > 50){
+			while((abs(_fly.flyPID.error) > 50)){
+				wait1Msec(20);
+			}
+		writeDebugStreamLine("SETTLE TIME %f", nPgmTime - init);
+	}
 }
 
 
 task usercontrol ()
 {
+	fw_stopFlyControl();
+	fw_startFlyControl();
+	stopTask(autonomous);
 	//GyroResetAngle();
-	initFlyWheel(fly);
-	initMecDrive(dr);
-	mec_StartTeleop();
-	startTask(intakeControl,3);
 
-	while(true)
+	mec_StartTeleop();
+	startTask(intakeControl,10);
+
+	 while(true)
 	{
 
 	//	_mecDrive();
@@ -146,16 +163,11 @@ task usercontrol ()
 	//	writeDebugStreamLine("%f", _intakeController.ballCount);
 
 
+	//utl_fw_printRecovery();
 
-	//printPIDDebug(_fly.flyPID);
+	printPIDDebug(_fly.flyPID);
 
-	/**	long init = nPgmTime;
-		if(abs(_fly.flyPID.error) > 200){
-				while((abs(_fly.flyPID.error) > 200)){
-					wait1Msec(20);
-				}
-			writeDebugStreamLine("SETTLE TIME %f", nPgmTime - init);
-		}**/
+
 		//	writeDebugStreamLine("%f, %f  %f",error, nAvgBatteryLevel, Y);
 		//writeDebugStreamLine("_fly.currSpeed%f, set %f", FwCalculateSpeed(), _setRPM);
 		wait1Msec(200);

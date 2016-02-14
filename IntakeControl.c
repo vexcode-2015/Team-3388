@@ -19,7 +19,7 @@ const int intakeDriveTicks = 370;
 void driveIntake(int ticks){
 	int dTicks = 0;
 	int iTicks = -SensorValue[ _intakeController.enc ];
-	while(abs(dTicks) < abs(ticks)){
+	while(abs(dTicks) < abs(ticks) && vexRT[Btn7U] == 0){
 		//writeDebugStreamLine("%f   %f",SensorValue[_intakeController.enc], dTicks);
 		motor[ _intakeController.outIntake ] = ticks > 0 ? 127 : -127;
 		motor[ _intakeController.liftIntake ] = ticks > 0 ? 127 : -127;
@@ -31,6 +31,10 @@ void driveIntake(int ticks){
 
 void driveIntake(){
 	driveIntake(intakeDriveTicks);
+}
+
+void ink_driveBack(){
+	driveIntake(-intakeDriveTicks);
 }
 
 void IntakeInit(tMotor lift, tMotor outer, tSensors liftSense, tSensors outSense, tSensors encoder){
@@ -49,7 +53,7 @@ bool ballAtLift(){
 
 
 
-const int ultraThresh = 10;
+const int ultraThresh = 12;
 bool ballAtOuter(){
 	return SensorValue[_intakeController.outerSensor] <= ultraThresh;
 }
@@ -68,10 +72,10 @@ void incrementBallCount(){
 
 void autoIntake(){
 	if(ballAtLift() && _intakeController.ballCount <= 1){
-		wait1Msec(200);
+			wait1Msec(100);
 			driveIntake(intakeDriveTicks);
 			_intakeController.ballCount++;
-			wait1Msec(200);
+
 			//motor[_intakeController.outIntake] = 127;
 	}
 	else if((ballAtLift() && (_intakeController.ballCount == 2)) && !ballAtOuter()){
@@ -91,7 +95,7 @@ void autoIntake(){
 		else{
 			motor[_intakeController.outIntake] = 0;
 		}
-		wait1Msec(200);
+		wait1Msec(100);
 	}
 	else{
 		//motor[_intakeController.outIntake] = 127;
@@ -167,6 +171,16 @@ void ink_waitUntilFire(int errorThresh){
 }
 
 
+void ink_spitOut(){
+	ink_driveBack();
+	if(ballCount >= 1){
+		ballCount--;
+	}
+	//wait1Msec(100);
+}
+
+
+
 task intakeControl(){
 	long initTime = nSysTime;
 
@@ -175,7 +189,7 @@ task intakeControl(){
 
 		//autoshooter
 		if(vexRT[Btn7L] == 1){
-			//empty everything
+			ink_spitOut();
 
 		}
 
@@ -206,7 +220,7 @@ task intakeControl(){
 		else if(vexRT[Btn6D] == 1){
 			//override
 			while(vexRT[Btn6D] == 1){
-				ink_fireWhenReady(20);
+				ink_fireWhenReady(60);
 				wait1Msec(20);
 			}
 		}
@@ -261,6 +275,7 @@ void autonomousShoot(){
 	wait1Msec(900);
 	_intakeController.ballCount = 0;
 }
+
 
 void fw_skillsShoot(){
 	driveIntake();

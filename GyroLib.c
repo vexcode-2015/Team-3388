@@ -19,8 +19,8 @@ typedef struct _gyroData {
 
 // local storage for the gyro calculations
 static  gyroData    theGyro;
-
-#define GYRO_DRIFT_THRESHOLD    3
+//prev = 3
+#define GYRO_DRIFT_THRESHOLD  7
 
 /*-----------------------------------------------------------------------------*/
 /** @brief display current gyro angle on the LCD for debug pruposes            */
@@ -158,6 +158,14 @@ GyroReinit()
     startTask( GyroTask );
 }
 
+void GyroSetAngle(float in){
+	theGyro.angle = in;
+}
+
+void GyroZeroAbs(){
+ 	theGyro.angle = 0;
+}
+
 /*-----------------------------------------------------------------------------*/
 /** @brief    Get the current gyro angle in degrees                            */
 /** @returns  gyro angle in the range 0 to 360 deg                             */
@@ -212,7 +220,6 @@ GyroWarningEliminate()
 {
     GyroDebug(0);
     GyroReinit();
-    GyroAngleDegGet();
     GyroAngleRadGet();
     GyroAngleAbsGet();
     GyroValidGet();
