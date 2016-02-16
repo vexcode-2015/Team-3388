@@ -72,7 +72,7 @@ void incrementBallCount(){
 
 void autoIntake(){
 	if(ballAtLift() && _intakeController.ballCount <= 1){
-			wait1Msec(100);
+			wait1Msec(300);
 			driveIntake(intakeDriveTicks);
 			_intakeController.ballCount++;
 

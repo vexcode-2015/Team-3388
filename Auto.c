@@ -11,12 +11,12 @@ void auto_rout_skills(){
 	writeDebugStreamLine("running skills");
 	///fw_fullCourtSpeed();
 
-	mec_GyroTurnAbs(18);
+	mec_GyroTurnAbs(16);
 	writeDebugStreamLine("%f", GyroGetAngle());
 	long initTime = nPgmTime;
 	while(nPgmTime < initTime + 22000){
 		writeDebugStreamLine("%f", GyroGetAngle());
-		ink_waitUntilFire(60);
+		ink_waitUntilFire(100);
 	}
 	startTask(intakeControl);
 
@@ -36,10 +36,10 @@ void auto_rout_skills(){
 	mec_GyroTurnAbs(0);
 	mec_driveInches(-20,120,1000);
 	mec_driveInches(8);
-	mec_GyroTurnRel(-11);
+	mec_GyroTurnRel(-14);
 	stopTask(intakeControl);
 	while(true){
-		ink_fireWhenReady(30);
+		ink_waitUntilFire(100);
 	}
 
 //	fw_skillSpeed();
@@ -59,8 +59,8 @@ void auto_rout_getMidBalls(bool isRed,bool isOut){
 
 		int mod = isRed ? 1 : -1;
 		mod = isOut ? mod * 1 : mod * -1;
-		setFlyRpm(2280);
-		_fly.pred = 60;
+		setFlyRpm(2330);
+		_fly.pred = 50;
 
 		_intakeController.ballCount = 4;
 		mec_driveInches(20);
@@ -71,8 +71,8 @@ void auto_rout_getMidBalls(bool isRed,bool isOut){
 		}
 
 		_intakeController.ballCount = 0;
-		setFlyRpm(2240);
-		_fly.pred = 60;
+		setFlyRpm(2290);
+		_fly.pred = 50;
 
 		startTask(intakeControl,9);
 		if(isRed){
@@ -82,13 +82,46 @@ void auto_rout_getMidBalls(bool isRed,bool isOut){
 			mec_GyroTurnRel(140 * mod);
 		}
 		mec_driveInches(-16,35,9999);
-		mec_GyroTurnRel((-140 * mod) + mod * 2);
+		mec_GyroTurnAbs((mod * 3));
 
 		for(int i = 0; i<6; i++){
 			ink_waitUntilFire(20);
 		}
 
 }
+
+void auto_rout_skillsShort(){
+	mec_driveInches(8);
+	fw_skillsShortSpeed();
+	mec_GyroTurnAbs(7);
+
+	writeDebugStreamLine("%f", GyroGetAngle());
+	long initTime = nPgmTime;
+	while(nPgmTime < initTime + 15000){
+		ink_waitUntilFire(100);
+		wait1Msec(20);
+	}
+	mec_GyroTurnAbs(0);
+	mec_driveInches(-20);
+	mec_GyroTurnAbs(90);
+
+	startTask(intakeControl);
+	mec_driveInchesTwoStage(-130,-30,100,60,5999);
+	mec_driveInches(7);
+	mec_GyroTurnAbs(0);
+	mec_driveInches(20);
+	mec_GyroTurnRel(-7);
+
+	stopTask(intakeControl);
+	while(true){
+		ink_fireWhenReady(100);
+		wait1Msec(20):
+	}
+	//mec_tmpDriveInches(1,0.2,1);
+
+
+}
+
 
 
 
@@ -128,7 +161,7 @@ void auto_rout_facingStack(bool isRed){
 	_intakeController.ballCount = 4;
 
 
-	setFlyRpm(2170);
+	setFlyRpm(2210);
 	_fly.pred = 68;
 
 	mec_GyroTurnAbs(8.2 * flip);

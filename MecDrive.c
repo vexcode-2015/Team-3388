@@ -75,7 +75,7 @@ float _getRightEnc(){
 
 
 float GYRO_KP = 2.4;//2;
-float GYRO_KI = 2;//3;
+float GYRO_KI = 2.4;//3;
 float GYRO_KD = 0.25; //0.34
 float GYRO_INTLIM = 1270;
 float GYRO_ERROR_THRESH = 0.7;
@@ -83,7 +83,7 @@ float GYRO_ERROR_THRESH = 0.7;
 
 void mec_GyroTurnAbs(int degrees, bool escapable){
 	pidInit(mec.gyroPID, GYRO_KP,GYRO_KI,GYRO_KD,0,GYRO_INTLIM);
-	pidInit(mec.slave, 	0.3,0,0,0,1270);
+	pidInit(mec.slave, 	0.33,0,0.05,0,1270);
 	pidReset(mec.gyroPID);
 	pidReset(mec.slave);
 	mec.pidEnabled = false;
@@ -101,7 +101,7 @@ void mec_GyroTurnAbs(int degrees, bool escapable){
 	float initTicksL = _getLeftEnc();
 	float initTicksR = _getRightEnc();
 
-	int integralLimit = 15 / mec.gyroPID.kI;
+	int integralLimit = 20 / mec.gyroPID.kI;
 	int escapeThresh = 30;
 	while(!targetReached){
 
@@ -218,20 +218,20 @@ float util_calculatePredVel(float initSpeed, float a, float d){
 
 const int DRIVE_SAT_TIME = 200;
 
-float _DRIVE_KP = 0.3;
-float _DRIVE_KI = 0.2;
+float _DRIVE_KP = 0.35;
+float _DRIVE_KI = 0.3;
 float _DRIVE_KD = 0.16;
 
-float _SLAVE_KP = 0.3;
+float _SLAVE_KP = 0.6;
 
 void mec_driveInches(float inches, int maxSpeed,int expiryms){
 	//def constants
 	pidInit(mec.master, _DRIVE_KP,_DRIVE_KI,_DRIVE_KD,0,1270);
-	pidInit(mec.slave, _SLAVE_KP,0,0,0,1270);
+	pidInit(mec.slave, _SLAVE_KP,0,0.05,0,1270);
 	pidReset(mec.master);
 	pidReset(mec.slave);
 
-	int integralLimit = 25 / mec.master.ki;
+	int integralLimit = 20 / mec.master.ki;
 
 	//turn off pid task
 	mec.pidEnabled = false;

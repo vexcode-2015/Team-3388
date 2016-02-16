@@ -10,15 +10,15 @@
 #include "MecDrive.c"
 
 int SKILLS_SHORT_RPM = 2000;
-int SKILLS_SHORT_POW = 65;
-int SKILLS_RPM = 2200; //1950
-int SKILLS_POW = 65;
+int SKILLS_SHORT_POW = 45;
+int SKILLS_RPM = 2260; //1950
+int SKILLS_POW = 45;
 int SHORT_RPM = 1690;
-int SHORT_POW = 40;
+int SHORT_POW = 30;
 int MED_RPM = 2000;
-int MED_POW = 50;
-int LONG_RPM  = 2400;//2680;//2950;
-int HIGH_POW = 76;//75;
+int MED_POW = 40;
+int LONG_RPM  = 2480;//2680;//2950;
+int HIGH_POW = 57;//75;
 
 
 typedef struct {
@@ -138,6 +138,11 @@ void fw_skillSpeed(){
 	_fly.pred = SKILLS_POW;
 }
 
+void fw_skillsShortSpeed(){
+	setFlyRpm(SKILLS_SHORT_RPM);
+	_fly.pred = SKILLS_SHORT_POW;
+}
+
 void fw_midSpeed(){
 	setFlyRpm(MED_RPM);
 	_fly.pred = MED_POW;
@@ -164,7 +169,7 @@ task flw_tsk_FeedForwardCntrl(){
 	//dislike slow
 	//pidInit(_fly.flyPID, 0.2, 0.001, 0, 100, 9999);
 
-	int integralLimit = 20 / _fly.flyPID.kI;
+	int integralLimit = 24 / _fly.flyPID.kI;
 	float output = 0;
 	float initTime = nPgmTime;
 	//basically for this we need a guess motor power
@@ -251,7 +256,7 @@ void fw_stopFlyControl(){
 }
 
 void fw_startFlyControl(){
-	startTask(flw_tsk_FeedForwardCntrl,20);
+	startTask(flw_tsk_FeedForwardCntrl,24);
 }
 
 #endif

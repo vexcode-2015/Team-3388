@@ -103,7 +103,7 @@ task autonomous()
 	}
 
 	if(SensorValue[potColour] > 1000 && SensorValue[potColour] < 3000){
-		auto_rout_skills();
+		auto_rout_skillsShort();
 	}else{
 		auto_rout_getMidBalls(isOutside,isRed);
 	}
@@ -144,7 +144,7 @@ task usercontrol ()
 	//GyroResetAngle();
 
 	mec_StartTeleop();
-	startTask(intakeControl,10);
+	startTask(intakeControl,6);
 
 	 while(true)
 	{
@@ -162,10 +162,10 @@ task usercontrol ()
 	//printPIDDebug(mec.master);
 	//	writeDebugStreamLine("%f", _intakeController.ballCount);
 
-
+	//writeDebugStreamLine("%f     %f", motor[mFly1], _fly.pred);
 	//utl_fw_printRecovery();
 
-	printPIDDebug(_fly.flyPID);
+	//printPIDDebug(_fly.flyPID);
 
 
 		//	writeDebugStreamLine("%f, %f  %f",error, nAvgBatteryLevel, Y);
