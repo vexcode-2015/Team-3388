@@ -27,6 +27,7 @@ void driveIntake(int ticks){
 		wait1Msec(20);
 	}
 	motor[ _intakeController.liftIntake ] =  0 ;
+	writeDebugStreamLine("settting 0 ");
 }
 
 void driveIntake(){
@@ -53,7 +54,7 @@ bool ballAtLift(){
 
 
 
-const int ultraThresh = 12;
+const int ultraThresh = 18;
 bool ballAtOuter(){
 	return SensorValue[_intakeController.outerSensor] <= ultraThresh;
 }
@@ -72,20 +73,18 @@ void incrementBallCount(){
 
 void autoIntake(){
 	if(ballAtLift() && _intakeController.ballCount <= 1){
-			wait1Msec(300);
 			driveIntake(intakeDriveTicks);
 			_intakeController.ballCount++;
-
 			//motor[_intakeController.outIntake] = 127;
 	}
 	else if((ballAtLift() && (_intakeController.ballCount == 2)) && !ballAtOuter()){
 			_intakeController.ballCount = 3;
-			wait1Msec(200);
+			wait1Msec(50);
 			//motor[_intakeController.outIntake] = 127;
 	}
 	else if(ballAtLift() && ballAtOuter() && _intakeController.ballCount != 4){
 		_intakeController.ballCount = 4;
-		wait1Msec(200);
+		wait1Msec(30);
 	}
 
 	if(_intakeController.ballCount == 4){

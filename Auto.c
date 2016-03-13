@@ -189,6 +189,26 @@ void auto_rout_facingStack(bool isRed){
 	_intakeController.ballCount = 0;
 }
 
+void auto_rout_midShootTwo(bool isRed){
+		setFlyRpm(2210);
+		_fly.pred = 50;
+		startTask(intakeControl);
+		int mod = isRed ? -1 : 1;
+
+		mec_driveInchesTwoStage(-45,-30,100,30,9999);
+		mec_GyroTurnRel(140 * mod);
+
+		for(int i = 0; i<4; i++){
+			ink_waitUntilFire(300);
+		}
+
+		mec_GyroTurnRel(-40 * mod);
+		mec_driveInches(-20,30,2000);
+		mec_driveInches(10);
+		mec_GyroTurnRel(40 * mod);
+}
+
+
 
 void autoTesting(){
 	mec_driveInches(20);

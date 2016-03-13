@@ -1,6 +1,6 @@
 #ifndef MecDrive.c
 #define MecDrive.c
-#define JOYSTICK_DEADZONE  5
+#define JOYSTICK_DEADZONE  10
 #include "Utils.c"
 #include "PIDController.h"
 #include "GyroLib.c"
@@ -36,6 +36,7 @@ void zeroDriveEncoders(){
 
 //sets drive output to output through linear map
 void _setLeftDrivePow(int power){
+
 	if(power == 0){
 		motor[mec.fl] = 0;
 		motor[mec.bl] = 0;
@@ -57,6 +58,7 @@ void _setRightDrivePow(int power){
 		motor[mec.mr] = 0;
 		return;
 	}
+
 	//motor[mec.fr] = power;
 	//motor[mec.br] = power;
 	//motor[mec.mr] = power;
@@ -74,12 +76,75 @@ float _getRightEnc(){
 }
 
 
+static float DRIVE_WIDTH = 15;
+void mec_ArcTurn(float radius, float endAng, bool isRight){
+	pidInit(mec.master, 0.5, 0.1, 0, 0,0);
+	float outsideTicks =  (endAng / 360) * (radius + DRIVE_WIDTH) * 2 * PI * TICKS_PER_INCHES;
+	float insideTicks = (radius) * 2 * PI * TICKS_PER_INCHES;
+	float ratio = insideTicks / outsideTicks;
+
+	pidReset(mec.master);
+	pidReset(mec.slave);
+	float error;
+	float slaveErr;
+	bool targetReached = false;
+
+
+	long timeInit = nPgmTime;
+	long atTargetTime = nPgmTime;
+
+	float errorThreshold = 2;
+
+	float initTicksL = _getLeftEnc();
+	float initTicksR = _getRightEnc();
+
+	while(!targetReached){
+		if(isRight){
+		 error = outsideTicks - (_getRightEnc() - initTicksR);
+		 slaveErr = (_getRightEnc() - initTicksR) * ratio - (_getLeftEnc() - initTicksL);
+		} else{
+		 error = outsideTicks - (_getLeftEnc() - initTicksL);
+		 slaveErr =  (-1 * (_getRightEnc() - initTicksR)) + ratio * (_getLeftEnc() - initTicksL);
+		}
+		printPIDDebug(mec.master);
+		 float driveOut = pidExecute(mec.master, error);
+		 float slaveOut = pidExecute(mec.slave,slaveErr);
+
+		if(abs(driveOut) > 100){
+			driveOut = driveOut > 0 ? 100 : -100;
+		}
+		//debug
+		slaveOut = 0;
+		if(isRight){
+			_setLeftDrivePow(driveOut);
+			writeDebugStreamLine("%f", driveOut);
+			_setRightDrivePow(driveOut * ratio);
+		} else{
+			_setLeftDrivePow(driveOut * ratio);
+			_setRightDrivePow(driveOut);
+		}
+
+
+		if(abs(error) > errorThreshold){
+			atTargetTime = nPgmTime;
+		}
+
+		if(nPgmTime - atTargetTime > 250){
+			targetReached = true;
+			_setLeftDrivePow(0);
+			_setRightDrivePow(0);
+			break;
+		}
+	}
+}
+
+
+
 float GYRO_KP = 2.4;//2;
 float GYRO_KI = 2.4;//3;
 float GYRO_KD = 0.25; //0.34
 float GYRO_INTLIM = 1270;
 float GYRO_ERROR_THRESH = 0.7;
-
 
 void mec_GyroTurnAbs(int degrees, bool escapable){
 	pidInit(mec.gyroPID, GYRO_KP,GYRO_KI,GYRO_KD,0,GYRO_INTLIM);
@@ -382,6 +447,13 @@ void printGyroPIDDebug(){
 	printPIDDebug(mec.gyroPID);
 }
 
+float STRETCH_FACT = 0.7;
+int getMappedVal(float x){
+	float newX = x/127;
+ 	return 127 * ((STRETCH_FACT * pow(newX,3) + (1-0.7) * newX));
+}
+
+
 void _mecDrive(){
 		int x1 = vexRT[Ch4];
 		int y1 = 0;//vexRT[Ch3];
@@ -396,18 +468,11 @@ void _mecDrive(){
 	//	writeDebugStreamLine("%f", x1);
 
 		int oldSign = x1;
+		x1 = getMappedVal(x1);
+
+
 		if(x1!=0){
-
-
-			x1 = (x1 * x1 * x1 ) / (127 * 127);//((x1 * x1 * x1 / abs(x1) ) / (127));
-
-			if(abs(y1) > 40){
-				x1 = 20 * y1 / abs(y1);
-				y1 = 0;
-			}
-			else{
-				y1 = 0;
-			}
+	//		x1 = (x1 * x1 * x1 ) / (127 * 127);//((x1 * x1 * x1 / abs(x1) ) / (127));
 		/**
 			if(abs(y2) > 80){
 				x1 = oldSign > 0 ? x1 + 55 : x1 - 55;

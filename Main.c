@@ -1,10 +1,10 @@
 #pragma config(UART_Usage, UART1, uartVEXLCD, baudRate19200, IOPins, None, None)
 #pragma config(UART_Usage, UART2, uartNotUsed, baudRate4800, IOPins, None, None)
 #pragma config(Sensor, in1,    gyroDrive,      sensorAnalog)
-#pragma config(Sensor, in3,    lfIntake,       sensorLineFollower)
-#pragma config(Sensor, in5,    potColour,      sensorPotentiometer)
-#pragma config(Sensor, in6,    potTile,        sensorPotentiometer)
-#pragma config(Sensor, dgtl1,  encLeftDr,      sensorQuadEncoder)
+#pragma config(Sensor, in2,    lfIntake,       sensorLineFollower)
+#pragma config(Sensor, in3,    potColour,      sensorPotentiometer)
+#pragma config(Sensor, in4,    potTile,        sensorPotentiometer)
+#pragma config(Sensor, dgtl2,  encLeftDr,      sensorQuadEncoder)
 #pragma config(Sensor, dgtl5,  encFlywheel,    sensorQuadEncoder)
 #pragma config(Sensor, dgtl7,  encIntake,      sensorQuadEncoder)
 #pragma config(Sensor, dgtl9,  ultraIntake,    sensorSONAR_cm)
@@ -76,6 +76,7 @@ void pre_auton()
 
 task autonomous()
 {
+
 	stopTask(usercontrol);
 	mec_StopTeleop();
 	fw_startFlyControl();
@@ -105,7 +106,8 @@ task autonomous()
 	if(SensorValue[potColour] > 1000 && SensorValue[potColour] < 3000){
 		auto_rout_skillsShort();
 	}else{
-		auto_rout_getMidBalls(isOutside,isRed);
+		auto_rout_midShootTwo(isRed);
+		//auto_rout_getMidBalls(isOutside,isRed);
 	}
 	//mec_tmpDriveInches(1,0.2,1);
 }
@@ -148,7 +150,6 @@ task usercontrol ()
 
 	 while(true)
 	{
-
 	//	_mecDrive();
 	//driveTesting();
 

@@ -1,7 +1,7 @@
 
 #ifndef FlyControl.c
 #define FlyControl.c
-
+//old 20
 #define FW_LOOP_SPEED	20
 
 
@@ -17,7 +17,7 @@ int SHORT_RPM = 1690;
 int SHORT_POW = 30;
 int MED_RPM = 2000;
 int MED_POW = 40;
-int LONG_RPM  = 2480;//2680;//2950;
+int LONG_RPM  = 2630;//2480;//2680;//2950;
 int HIGH_POW = 57;//75;
 
 
@@ -63,7 +63,7 @@ float FwCalculateSpeed()
 	delta_enc = (encoder_counts - encoder_counts_last);
 	encoder_counts_last = encoder_counts;
 	float newSpeed = (1000.0 / delta_ms) * delta_enc;
-	_fly.currSpeed = (_fly.currSpeed * 0.7) + newSpeed * 0.3;
+	_fly.currSpeed = (_fly.currSpeed * 0.6) + newSpeed * 0.4;
 	return _fly.currSpeed;
 }
 
