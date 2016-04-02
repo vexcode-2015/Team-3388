@@ -68,12 +68,64 @@ void _setRightDrivePow(int power){
 }
 
 float _getLeftEnc(){
-	return -SensorValue[mec.encLeft];
+	return SensorValue[mec.encLeft];
 }
 
 float _getRightEnc(){
 	return -SensorValue[mec.encRight];
 }
+
+//40 inches per second
+const float DRV_MAX_VEL = 35;
+const float DRV_MAX_ACCEL = 10;
+void mec_mpfDrive(float inches){
+	bool atSet = false;
+	float initL = _getLeftEnc();
+	float initR = _getRightEnc();
+	float initLChange = initL;
+	long initTime = nPgmTime - 1;
+	float goalDis = inches;
+	float cruiseVel = utl_getMin(DRV_MAX_VEL, sqrt(2 * DRV_MAX_ACCEL * goalDis));
+	float accelDis = cruiseVel * cruiseVel / (2 * DRV_MAX_ACCEL);
+	float cruiseDis = goalDis - 2 * accelDis;
+
+	float kV = 1 / DRV_MAX_VEL;
+	float kA = 1 / DRV_MAX_ACCEL;
+	float kP = 0;
+	float dT = 20;
+
+	while(!atSet){
+		long currDt = nPgmTime - initTime;
+		initTime = nPgmTime;
+		if(currDt ==  0){
+			currDt = 1;
+		}
+		float currPos =  (_getLeftEnc() - initL) / TICKS_PER_INCHES;
+		float goalVel = 0;
+		float goalAccel = 0;
+		float goalPos = currPos;
+		if(abs(currPos) < abs(accelDis)){
+				goalAccel = DRV_MAX_ACCEL;
+				goalVel = sqrt(2 * DRV_MAX_ACCEL * currPos);
+			  goalPos += currPos * goalVel * currDt / 1000;
+		} else if (abs(currPos) < abs(cruiseDis + accelDis)){
+			 	goalAccel = 0;
+			 	goalVel = DRV_MAX_VEL;
+			  goalPos += currPos * goalVel * currDt / 1000;
+		} else if (abs(currPos) < abs(cruiseDis + accelDis * 2)){
+				goalAccel = -DRV_MAX_ACCEL;
+				goalVel = sqrt( cruiseVel * cruiseVel - 2 *DRV_MAX_ACCEL * currPos);
+			  goalPos += currPos * goalVel * currDt / 1000;
+		}
+		double error = goalPos - currPos;
+		double output = goalVel * kV + goalAccel * kA + error * kP;
+		_setLeftDrivePow(output);
+		_setRightDrivePow(output);
+		wait1Msec(dT);
+	}
+}
+
+
 
 
 static float DRIVE_WIDTH = 15;
@@ -144,7 +196,7 @@ float GYRO_KP = 2.4;//2;
 float GYRO_KI = 2.4;//3;
 float GYRO_KD = 0.25; //0.34
 float GYRO_INTLIM = 1270;
-float GYRO_ERROR_THRESH = 0.7;
+float GYRO_ERROR_THRESH = 2;
 
 void mec_GyroTurnAbs(int degrees, bool escapable){
 	pidInit(mec.gyroPID, GYRO_KP,GYRO_KI,GYRO_KD,0,GYRO_INTLIM);
@@ -200,7 +252,7 @@ void mec_GyroTurnAbs(int degrees, bool escapable){
 	//		slaveOut = slaveOut / n;
 	//	}
 		int minVal = 13;
-		if(abs(error) > errorThreshold){
+		if(abs(error) > GYRO_ERROR_THRESH){
 			atTargetTime = nPgmTime;
 			if(abs(driveOut) < minVal){
 				if(driveOut != 0){
@@ -220,7 +272,7 @@ void mec_GyroTurnAbs(int degrees, bool escapable){
 
 
 
-		if(nPgmTime - atTargetTime > 250){
+		if(nPgmTime - atTargetTime > 200){
 			targetReached = true;
 			_setLeftDrivePow(0);
 			_setRightDrivePow(0);
@@ -306,10 +358,11 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms){
 	long timeInit = nPgmTime;
 	long atTargetTime = nPgmTime;
 	long expTime = nPgmTime + expiryms;
-	float errorThreshold = 0.7 * TICKS_PER_INCHES; //tolerance of 0.2 inches
+	float errorThreshold = 0.2 * TICKS_PER_INCHES; //tolerance of 0.2 inches
 
 	int initDriveL = _getLeftEnc();
 	int initDriveR = _getRightEnc();
+	writeDebugStreamLine("starting");
 	while(!targetReached){
 		//left encoder is master
 		float error = setPoint - ( _getLeftEnc() - initDriveL);
@@ -324,7 +377,7 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms){
 		float driveOut = pidExecute(mec.master,error);
 
 		float slaveOut = pidExecute(mec.slave, slaveErr);
-
+		writeDebugStreamLine("%f", error);
 		//we need to add a special case in case driveOut is saturated
 		if(abs(driveOut) > maxSpeed){
 			driveOut = maxSpeed * (driveOut/abs(driveOut));
@@ -369,7 +422,7 @@ void mec_driveInchesTwoStage(float distance, float slowDist, int maxSpeed, int s
 	long timeInit = nPgmTime;
 	long atTargetTime = nPgmTime;
 	long expTime = nPgmTime + expiryms;
-	float errorThreshold = 0.2 * TICKS_PER_INCHES; //tolerance of 0.2 inches
+	float errorThreshold = 1 * TICKS_PER_INCHES; //tolerance of 0.2 inches
 
 	int initDriveL = _getLeftEnc();
 	int initDriveR = _getRightEnc();
@@ -385,13 +438,12 @@ void mec_driveInchesTwoStage(float distance, float slowDist, int maxSpeed, int s
 			mec.master.errorSum = mec.master.errorSum > 0 ?  integralLimit : -integralLimit;
 		}
 		float driveOut = pidExecute(mec.master,error);
-
 		float slaveOut = pidExecute(mec.slave, slaveErr);
 
 		//we need to add a special case in case driveOut is saturated
 
 
-		if((distance - slowDist) * TICKS_PER_INCHES > (_getLeftEnc() - initDriveL)){
+		if((abs(distance) - abs(slowDist)) * TICKS_PER_INCHES < abs(_getLeftEnc() - initDriveL)){
 
 			if(abs(driveOut) > secondMax){
 				driveOut = secondMax * driveOut / abs(driveOut);

@@ -20,7 +20,7 @@ typedef struct _gyroData {
 // local storage for the gyro calculations
 static  gyroData    theGyro;
 //prev = 3
-#define GYRO_DRIFT_THRESHOLD  4
+#define GYRO_DRIFT_THRESHOLD  5
 
 /*-----------------------------------------------------------------------------*/
 /** @brief display current gyro angle on the LCD for debug pruposes            */

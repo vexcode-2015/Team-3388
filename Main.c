@@ -4,7 +4,7 @@
 #pragma config(Sensor, in2,    lfIntake,       sensorLineFollower)
 #pragma config(Sensor, in3,    potColour,      sensorPotentiometer)
 #pragma config(Sensor, in4,    potTile,        sensorPotentiometer)
-#pragma config(Sensor, dgtl2,  encLeftDr,      sensorQuadEncoder)
+#pragma config(Sensor, dgtl1,  encLeftDr,      sensorQuadEncoder)
 #pragma config(Sensor, dgtl5,  encFlywheel,    sensorQuadEncoder)
 #pragma config(Sensor, dgtl7,  encIntake,      sensorQuadEncoder)
 #pragma config(Sensor, dgtl9,  ultraIntake,    sensorSONAR_cm)
@@ -46,6 +46,7 @@ void motorTest(){
 
 void pre_auton()
 {
+
 	//bStopTasksBetweenModes = false;
 	dr.fl = mDrFl; dr.fr = mDrFr; dr.bl = mDrBl;	dr.br = mDrBr; dr.ml = mDrMl; dr.mr = mDrMr;
 	dr.gyro = gyroDrive; dr.encLeft = encLeftDr; dr.encRight = encRightDr;
@@ -66,7 +67,10 @@ void pre_auton()
 	printCalibratingGyro();
 	GyroInit(in1);
 	bStopTasksBetweenModes = false;
-	wait1Msec(3000);
+	playTone(440, 50);
+	wait1Msec(1500);
+
+
 
 //	while((nVexRCReceiveState & vrDisabled)){
 //		printBatteryToLCD();
@@ -81,6 +85,8 @@ task autonomous()
 	mec_StopTeleop();
 	fw_startFlyControl();
 	GyroZeroAbs();
+	//auto_rout_mid3stack();
+
 
 	int colourThresh = 2000;
 
@@ -106,10 +112,11 @@ task autonomous()
 	if(SensorValue[potColour] > 1000 && SensorValue[potColour] < 3000){
 		auto_rout_skillsShort();
 	}else{
-		auto_rout_midShootTwo(isRed);
+	//	auto_rout_midShootTwo(isRed);
+		auto_rout_threestacks();
 		//auto_rout_getMidBalls(isOutside,isRed);
 	}
-	//mec_tmpDriveInches(1,0.2,1);
+	//\mec_tmpDriveInches(1,0.2,1); **/
 }
 
 
@@ -148,6 +155,7 @@ task usercontrol ()
 	mec_StartTeleop();
 	startTask(intakeControl,6);
 
+
 	 while(true)
 	{
 	//	_mecDrive();
@@ -163,7 +171,7 @@ task usercontrol ()
 	//printPIDDebug(mec.master);
 	//	writeDebugStreamLine("%f", _intakeController.ballCount);
 
-	//writeDebugStreamLine("%f     %f", motor[mFly1], _fly.pred);
+	//writeDebugStreamLine("%f     %f", motor[mIntake], _fly.pred);
 	//utl_fw_printRecovery();
 
 	//printPIDDebug(_fly.flyPID);
@@ -171,6 +179,6 @@ task usercontrol ()
 
 		//	writeDebugStreamLine("%f, %f  %f",error, nAvgBatteryLevel, Y);
 		//writeDebugStreamLine("_fly.currSpeed%f, set %f", FwCalculateSpeed(), _setRPM);
-		wait1Msec(200);
+		wait1Msec(500);
 	}
 }

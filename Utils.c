@@ -131,6 +131,21 @@ task utl_DebugHelperTask(){
 	}
 }
 
+float utl_getMin(float a, float b){
+	if(a < b){
+		return a;
+	} else{
+		return b;
+	}
+}
+
+float utl_getMax(float a, float b){
+	if(a > b){
+		return a;
+	} else{
+		return b;
+	}
+}
 
 
 

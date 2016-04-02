@@ -13,22 +13,34 @@ const int shootDelay = 400;
 	 int __intakeController.ballCount;
  };
 
-
 IntakeController _intakeController;
-const int intakeDriveTicks = 370;
-void driveIntake(int ticks){
+const int intakeDriveTicks = 360;//360;
+
+
+void driveIntake(int ticks, bool slow){
 	int dTicks = 0;
 	int iTicks = -SensorValue[ _intakeController.enc ];
 	while(abs(dTicks) < abs(ticks) && vexRT[Btn7U] == 0){
 		//writeDebugStreamLine("%f   %f",SensorValue[_intakeController.enc], dTicks);
+	if(!slow){
 		motor[ _intakeController.outIntake ] = ticks > 0 ? 127 : -127;
 		motor[ _intakeController.liftIntake ] = ticks > 0 ? 127 : -127;
+	}
+	else{
+
+		motor[ _intakeController.outIntake ] = ticks > 0 ? 127 : -127;
+		motor[ _intakeController.liftIntake ] = ticks > 0 ? 110 : -110;
+	}
 		dTicks = (-SensorValue[_intakeController.enc]) - iTicks;
 		wait1Msec(20);
 	}
 	motor[ _intakeController.liftIntake ] =  0 ;
-	writeDebugStreamLine("settting 0 ");
 }
+
+void driveIntake(int ticks){
+	driveIntake(ticks,false);
+}
+
 
 void driveIntake(){
 	driveIntake(intakeDriveTicks);
@@ -47,7 +59,7 @@ void IntakeInit(tMotor lift, tMotor outer, tSensors liftSense, tSensors outSense
 }
 
 
-const int _ballThresh = 2900;
+const int _ballThresh = 2970;
 bool ballAtLift(){
 	return SensorValue[_intakeController.liftSensor] < _ballThresh;
 }
@@ -73,7 +85,7 @@ void incrementBallCount(){
 
 void autoIntake(){
 	if(ballAtLift() && _intakeController.ballCount <= 1){
-			driveIntake(intakeDriveTicks);
+			driveIntake(intakeDriveTicks,true);
 			_intakeController.ballCount++;
 			//motor[_intakeController.outIntake] = 127;
 	}
@@ -146,15 +158,15 @@ void ink_fireWhenReady(int threshold){
 					writeDebugStreamLine("shot error %d",_fly.flyPID.error);
 
 
-				driveIntake(intakeDriveTicks);
+				driveIntake(intakeDriveTicks,true);
 				if(_intakeController.ballCount == 1){
 						driveIntake(intakeDriveTicks);
 				}
 				if(_intakeController.ballCount != 0){
 					_intakeController.ballCount--;
 				}
+		}
 	}
-}
 	autoIntake();
 }
 
@@ -178,7 +190,10 @@ void ink_spitOut(){
 	//wait1Msec(100);
 }
 
-
+void ink_set(int pow){
+		motor[_intakeController.liftIntake] = pow;
+		motor[_intakeController.outIntake] = pow;
+}
 
 task intakeControl(){
 	long initTime = nSysTime;
@@ -188,7 +203,7 @@ task intakeControl(){
 
 		//autoshooter
 		if(vexRT[Btn7L] == 1){
-			ink_spitOut();
+			//ink_spitOut();
 
 		}
 

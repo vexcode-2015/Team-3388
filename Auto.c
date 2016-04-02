@@ -5,6 +5,48 @@
 #include "IntakeControl.c"
 
 
+void auto_rout_mid3stack(){
+	setFlyRpm(1400);
+	ink_set(127);
+	mec_driveInches(-38,40,9999);
+	wait1Msec(2000);
+	ink_set(0);
+	startTask(intakeControl);
+	mec_GyroTurnAbs(-115);
+	mec_driveInches(-13,80,1099);
+	mec_driveInches(-13,127,899);
+	mec_driveInches(5):
+	mec_driveInches(70,90,9999);
+	mec_GyroTurnAbs(-180);
+	ink_set(-127);
+	mec_driveInches(-60,90,9999);
+
+}
+
+
+void auto_rout_threestacks(){
+	setFlyRpm(SHORT_RPM + 200);
+	_fly.pred = SHORT_POW + 10;
+	startTask(intakeControl);
+
+	mec_driveInchesTwoStage(-105,40,100,30,9999);
+	mec_GyroTurnAbs(140);
+	for(int i = 0; i<6; i++){
+		ink_waitUntilFire(9000);
+	}
+	setFlyRpm(SHORT_RPM);
+	mec_GyroTurnAbs(-10);
+	mec_driveInches(-30);
+	mec_GyroTurnAbs(130);
+	for(int i = 0; i<6; i++){
+		ink_waitUntilFire(9000);
+	}
+	mec_GyroTurnAbs(30);
+
+	mec_driveInches(-5,30,2000);
+}
+
+
 void auto_rout_skills(){
 
 	fw_skillSpeed();
@@ -91,30 +133,28 @@ void auto_rout_getMidBalls(bool isRed,bool isOut){
 }
 
 void auto_rout_skillsShort(){
-	mec_driveInches(8);
+	GyroZeroAbs();
 	fw_skillsShortSpeed();
-	mec_GyroTurnAbs(7);
+	//mec_GyroTurnRel(3);
 
 	writeDebugStreamLine("%f", GyroGetAngle());
 	long initTime = nPgmTime;
+	ink_waitUntilFire(50);
 	while(nPgmTime < initTime + 15000){
-		ink_waitUntilFire(100);
+
 		wait1Msec(20);
 	}
-	mec_GyroTurnAbs(0);
-	mec_driveInches(-20);
+	ink_set(0);
 	mec_GyroTurnAbs(90);
-
 	startTask(intakeControl);
-	mec_driveInchesTwoStage(-130,-30,100,60,5999);
-	mec_driveInches(7);
-	mec_GyroTurnAbs(0);
-	mec_driveInches(20);
-	mec_GyroTurnRel(-7);
+	mec_driveInches(10,100,1000);
+	mec_driveInches(-127,100,6000);
+	mec_driveInches(5);
+	mec_GyroTurnRel(-93);
 
 	stopTask(intakeControl);
 	while(true){
-		ink_fireWhenReady(100);
+	ink_set(127);
 		wait1Msec(20):
 	}
 	//mec_tmpDriveInches(1,0.2,1);
