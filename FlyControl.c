@@ -9,15 +9,15 @@
 #include "PIDController.h"
 #include "MecDrive.c"
 
-int SKILLS_SHORT_RPM = 2100;
+int SKILLS_SHORT_RPM = 2170;
 int SKILLS_SHORT_POW = 45;
 int SKILLS_RPM = 1950; //1950
 int SKILLS_POW = 45;
 int SHORT_RPM = 1730;//1690;
 int SHORT_POW = 30;
-int MED_RPM = 2000;
+int MED_RPM = 2150;
 int MED_POW = 40;
-int LONG_RPM  = 2630;//2480;//2680;//2950;
+int LONG_RPM  = 2680;//2480;//2680;//2950;
 int HIGH_POW = 57;//75;
 
 

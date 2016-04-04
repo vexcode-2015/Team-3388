@@ -3,25 +3,64 @@
 
 #include "MecDrive.c"
 #include "IntakeControl.c"
+#include "FlyControl.c"
 
+void auto_rout_mid3stack(bool isRed){
+	int mult = isRed ? -1 : 1;
+	//drive forward
+	fw_fullCourtSpeed();
 
-void auto_rout_mid3stack(){
-	setFlyRpm(1400);
-	ink_set(127);
-	mec_driveInches(-38,40,9999);
-	wait1Msec(2000);
+	_fly.pred = 57;
+
 	ink_set(0);
+	_intakeController.ballCount = 4;
+	wait1Msec(1000);
+	for(int i = 0; i<5; i++){
+		ink_waitUntilFire(30);
+		wait1Msec(100);
+	}
+
+	mec_driveInches(15,100,3000);
+
+	//shoot first 4 balls
+	_intakeController.ballCount = 0;
 	startTask(intakeControl);
-	mec_GyroTurnAbs(-115);
-	mec_driveInches(-13,80,1099);
-	mec_driveInches(-13,127,899);
-	mec_driveInches(5):
-	mec_driveInches(70,90,9999);
-	mec_GyroTurnAbs(-180);
+	//turn toward first stack
+	mec_GyroTurnRel(-130 * mult);
+	mec_driveInches(-21,15,9999);
+	mec_driveInches(-30,127,500);
+
+	mec_GyroTurnRel(-180 * mult);
+	stopTask(intakeControl);
 	ink_set(-127);
-	mec_driveInches(-60,90,9999);
+	wait1Msec(2000);
+
+	_intakeController.ballCount = 0;
+	startTask(intakeControl);
+	//face the wall
+	mec_GyroTurnRel(-90 * mult);
+	//grab second stack
+	mec_driveInches(-15,127,1000);
+	mec_driveInches(5,127,500);
+	mec_driveInches(-10,40,1000);
+	mec_driveInches(10);
+	mec_GyroTurnRel(90);
+	ink_set(-127);
+	wait1Msec(2000);
 
 }
+
+void auto_rout_challengedMiddle(bool isRed){
+	int mult = isRed ? -1 : 1;
+	fw_fullCourtSpeed();
+	mec_driveInches(20,80,9000);
+	ink_waitUntilFire(100);
+	ink_set(127);
+	wait1Msec(800);
+	mec_GyroTurnAbs(-200 * mult);
+	mec_driveInches(-100);
+}
+
 
 
 void auto_rout_threestacks(){
@@ -56,9 +95,10 @@ void auto_rout_skills(){
 	mec_GyroTurnAbs(16);
 	writeDebugStreamLine("%f", GyroGetAngle());
 	long initTime = nPgmTime;
-	while(nPgmTime < initTime + 22000){
+	wait1Msec(3000);
+	while(nPgmTime < initTime + 17000){
 		writeDebugStreamLine("%f", GyroGetAngle());
-		ink_waitUntilFire(100);
+		ink_set(1);
 	}
 	startTask(intakeControl);
 
@@ -139,22 +179,22 @@ void auto_rout_skillsShort(){
 
 	writeDebugStreamLine("%f", GyroGetAngle());
 	long initTime = nPgmTime;
-	ink_waitUntilFire(50);
+	wait1Msec(3000);
 	while(nPgmTime < initTime + 15000){
-
+		ink_set(127);
 		wait1Msec(20);
 	}
 	ink_set(0);
 	mec_GyroTurnAbs(90);
 	startTask(intakeControl);
 	mec_driveInches(10,100,1000);
-	mec_driveInches(-127,100,6000);
+	mec_driveInches(-127,100,5500);
 	mec_driveInches(5);
 	mec_GyroTurnRel(-93);
 
 	stopTask(intakeControl);
 	while(true){
-	ink_set(127);
+		ink_set(127);
 		wait1Msec(20):
 	}
 	//mec_tmpDriveInches(1,0.2,1);

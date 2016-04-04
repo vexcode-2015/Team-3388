@@ -14,7 +14,7 @@ const int shootDelay = 400;
  };
 
 IntakeController _intakeController;
-const int intakeDriveTicks = 360;//360;
+const int intakeDriveTicks = 350;//360;
 
 
 void driveIntake(int ticks, bool slow){
@@ -156,9 +156,7 @@ void ink_fireWhenReady(int threshold){
 				wait1Msec(30);
 				if(abs(_fly.flyPID.error) < threshold){
 					writeDebugStreamLine("shot error %d",_fly.flyPID.error);
-
-
-				driveIntake(intakeDriveTicks,true);
+				driveIntake(intakeDriveTicks);
 				if(_intakeController.ballCount == 1){
 						driveIntake(intakeDriveTicks);
 				}
@@ -174,10 +172,10 @@ void ink_waitUntilFire(int errorThresh){
 	bool fired = false;
 	while(!fired){
 		if(abs(_fly.flyPID.error) < errorThresh){
-			driveIntake(intakeDriveTicks);
+			driveIntake(intakeDriveTicks,true);
 			fired = true;
 		}
-		wait1Msec(100);
+		wait1Msec(50);
 	}
 }
 
@@ -193,6 +191,7 @@ void ink_spitOut(){
 void ink_set(int pow){
 		motor[_intakeController.liftIntake] = pow;
 		motor[_intakeController.outIntake] = pow;
+
 }
 
 task intakeControl(){

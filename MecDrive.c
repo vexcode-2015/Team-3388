@@ -194,7 +194,7 @@ void mec_ArcTurn(float radius, float endAng, bool isRight){
 
 float GYRO_KP = 2.4;//2;
 float GYRO_KI = 2.4;//3;
-float GYRO_KD = 0.25; //0.34
+float GYRO_KD = 0.15; //0.34
 float GYRO_INTLIM = 1270;
 float GYRO_ERROR_THRESH = 2;
 
@@ -336,10 +336,10 @@ float util_calculatePredVel(float initSpeed, float a, float d){
 const int DRIVE_SAT_TIME = 200;
 
 float _DRIVE_KP = 0.35;
-float _DRIVE_KI = 0.3;
-float _DRIVE_KD = 0.16;
+float _DRIVE_KI = 0.2;
+float _DRIVE_KD = 0.05;
 
-float _SLAVE_KP = 0.6;
+float _SLAVE_KP = 0.7;
 
 void mec_driveInches(float inches, int maxSpeed,int expiryms){
 	//def constants
@@ -358,7 +358,7 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms){
 	long timeInit = nPgmTime;
 	long atTargetTime = nPgmTime;
 	long expTime = nPgmTime + expiryms;
-	float errorThreshold = 0.2 * TICKS_PER_INCHES; //tolerance of 0.2 inches
+	float errorThreshold = 0.4 * TICKS_PER_INCHES; //tolerance of 0.2 inches
 
 	int initDriveL = _getLeftEnc();
 	int initDriveR = _getRightEnc();

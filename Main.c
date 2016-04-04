@@ -80,7 +80,10 @@ void pre_auton()
 
 task autonomous()
 {
-
+	stopTask(intakeControl);
+		ink_set(0);
+		motor[mIntake] = 0;
+		motor[mIntake2] = 0;
 	stopTask(usercontrol);
 	mec_StopTeleop();
 	fw_startFlyControl();
@@ -112,11 +115,15 @@ task autonomous()
 	if(SensorValue[potColour] > 1000 && SensorValue[potColour] < 3000){
 		auto_rout_skillsShort();
 	}else{
-	//	auto_rout_midShootTwo(isRed);
-		auto_rout_threestacks();
+		//auto_rout_midShootTwo(isRedIIIIIIIIFI
+		if(!isOutside){
+			auto_rout_mid3stack(isRed);
+   	} else{
+	  	auto_rout_challengedMiddle(isRed);
+		}
 		//auto_rout_getMidBalls(isOutside,isRed);
 	}
-	//\mec_tmpDriveInches(1,0.2,1); **/
+	//\mec_tmpDriveInches(1,0.2,1); * */
 }
 
 
