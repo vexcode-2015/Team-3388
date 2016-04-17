@@ -114,7 +114,7 @@ task autonomous()
 		auto_rout_otusideHerdGrabStack(isRed);
 	}
 	else if(selection == 4){
-		auto_rout_outsideShoot(isRed);
+		auto_rout_shoot4(isRed);
 	}
 	else if(selection == 5){
 		//shoot
@@ -127,7 +127,6 @@ task autonomous()
 	else if(selection == 7){
 		auto_rout_test();
 	}
-
 }
 
 
@@ -159,16 +158,20 @@ void utl_fw_printRecovery(){
 task usercontrol ()
 {
 	fw_stopFlyControl();
+	ink_stopRunningShot();
 	fw_startFlyControl();
-	stopTask(autonomous);
-	//GyroResetAngle();
+	stopTask(autonomous);joy1_Buttons
+	GyroResetAngle();
 
 	mec_StartTeleop();
 	startTask(intakeControl,6);
 
 
+
 	 while(true)
 	{
+
+
 	//	writeDebugStreamLine("%f", SensorValue[potSwitcher]);
 	//	_mecDrive();
 	//driveTesting();

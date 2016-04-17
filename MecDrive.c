@@ -27,6 +27,12 @@ typedef struct {
 } DriveBase;
 DriveBase mec;
 
+
+float mec_getDriveErr(){
+		return mec.master.error;
+}
+
+
 //zero drive encoders
 void zeroDriveEncoders(){
 	SensorValue[mec.encLeft] = 0;
@@ -192,7 +198,7 @@ void mec_ArcTurn(float radius, float endAng, bool isRight){
 
 
 
-float GYRO_KP = 5.9/1.7;//2;
+float GYRO_KP = 6.5/1.7;//2;
 float GYRO_KI = 2.8/2.0;//3;
 float GYRO_KD = 3.3/8.0; //0.34
 float GYRO_INTLIM = 1270;
@@ -343,11 +349,11 @@ float _DRIVE_KD = 0.6/8.0;
 
 float _SLAVE_KP = 0.4;
 float _SLAVE_KD = 0;
-float _SLAVE_KI = 0;
+float _SLAVE_KI = 0.01;
 
 void mec_driveInches(float inches, int maxSpeed,int expiryms, float turnRatio = 1){
 	//def constants
-	pidInit(mec.master, _DRIVE_KP,_DRIVE_KI,_DRIVE_KD,0,1250);
+	pidInit(mec.master, _DRIVE_KP,_DRIVE_KI,_DRIVE_KD,0,1270);
 	pidInit(mec.slave, _SLAVE_KP,_SLAVE_KI,_SLAVE_KD,1000,1270);
 	pidReset(mec.master);
 	pidReset(mec.slave);
@@ -370,6 +376,12 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms, float turnRatio = 
 	writeDebugStreamLine("starting");
 	float initAngle = GyroGetAngle();
 	while(!targetReached){
+		if(timeInit + 400 > nPgmTime){
+			mec.master.slewRate = 400;
+		} else{
+			mec.master.slewRate = 1270;
+		}
+
 		//left encoder is master
 		float error = setPoint - (( _getLeftEnc() - initDriveL) + (_getRightEnc() - initDriveR)) / 2;
 		float slaveErr = ((_getLeftEnc() - initDriveL) / turnRatio) - ((_getRightEnc()- initDriveR) * turnRatio);
@@ -406,11 +418,12 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms, float turnRatio = 
 		 if(diffRatio > turnRatio){
 				//right is faster
 		 		//set right pow to 127
-		 		rightPow = rightPow > 0 ? maxSpeed : -maxSpeed;
-		 		leftPow = (rightPow) / diffRatio;
-			} else{
-				leftPow = leftPow > 0 ? maxSpeed : -maxSpeed;
+		 				leftPow = leftPow > 0 ? maxSpeed : -maxSpeed;
 				rightPow = diffRatio * leftPow;
+
+			} else{
+				rightPow = rightPow > 0 ? maxSpeed : -maxSpeed;
+		 		leftPow = (rightPow) / diffRatio;
 			}
 		}
 

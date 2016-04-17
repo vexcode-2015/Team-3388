@@ -2,6 +2,7 @@
 #define IntakeControl.c
 
 #include "FlyControl.c"
+#include "MecDrive.c"
 const int shootDelay = 400;
 
  typedef struct IntakeController{
@@ -14,13 +15,13 @@ const int shootDelay = 400;
  };
 
 IntakeController _intakeController;
-const int intakeDriveTicks = 340;//360;
+const int intakeDriveTicks = 355;//360;
 
 
 void driveIntake(int ticks, bool slow){
 	int dTicks = 0;
 	int iTicks = -SensorValue[ _intakeController.enc];
-	float kP = 0.3;
+	float kP = 0.1;
 	while(abs(dTicks) < abs(ticks) && vexRT[Btn7U] == 0){
 	writeDebugStreamLine("%f   %f",SensorValue[_intakeController.enc], dTicks);
 			dTicks = (-SensorValue[_intakeController.enc]) - iTicks;
@@ -86,6 +87,7 @@ void incrementBallCount(){
 
 void autoIntake(){
 	if(ballAtLift() && _intakeController.ballCount <= 1){
+			wait1Msec(50);
 			driveIntake(intakeDriveTicks,true);
 			_intakeController.ballCount++;
 			//motor[_intakeController.outIntake] = 127;
@@ -102,7 +104,10 @@ void autoIntake(){
 
 	if(_intakeController.ballCount == 4){
 		if(!ballAtOuter()){
-			_intakeController.ballCount--;
+			wait1Msec(100);
+			if(!ballAtOuter()){
+				_intakeController.ballCount--;
+			}
 		}
 		else{
 			motor[_intakeController.outIntake] = 0;
@@ -307,6 +312,31 @@ void fw_skillsShoot(){
 	wait1Msec(1200);
 	return;
 }
+
+
+
+float ink_runShotErr = 30;
+task ink_autoShoot(){
+	while(true){
+		writeDebugStreamLine("curr drive err %f",mec_getDriveErr() *  TICKS_PER_INCHES);
+		if( abs(mec_getDriveErr() /  TICKS_PER_INCHES)  < ink_runShotErr){
+				ink_set(127);
+		} else{
+				ink_set(0);
+  	}
+		wait1Msec(50);
+	}
+}
+
+void ink_startRunningShot(float thresh){
+	ink_runShotErr = thresh;
+	startTask(ink_autoShoot);
+}
+
+void ink_stopRunningShot(){
+	stopTask(ink_autoShoot);
+}
+
 
 
 #endif

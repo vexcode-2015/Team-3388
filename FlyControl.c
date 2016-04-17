@@ -9,14 +9,14 @@
 #include "PIDController.h"
 #include "MecDrive.c"
 
-int SKILLS_SHORT_RPM = 2100;
+int SKILLS_SHORT_RPM = 2130;
 int SKILLS_SHORT_POW = 45;
 int SKILLS_RPM = 1950; //1950
 int SKILLS_POW = 50;
-int SHORT_RPM = 1800;//1690;
-int SHORT_POW = 45;
-int MED_RPM = 2100;
-int MED_POW = 55;
+int SHORT_RPM = 1790;//1690;
+int SHORT_POW = 35;
+int MED_RPM = 2070;
+int MED_POW = 45;
 int LONG_RPM  = 2540;//2480;//2680;//2950;
 int HIGH_POW = 65;//75;
 
@@ -170,7 +170,7 @@ task flw_tsk_FeedForwardCntrl(){
 	pidReset(_fly.flyPID);
 	//TRY: fairly good fast recovery
 	//prev P 0.
-	pidInit(_fly.flyPID, 1.0, 0.05, 0, 0, 9999);
+	pidInit(_fly.flyPID, 0.6, 0.05, 0, 0, 9999);
 	//pidInit(_fly.flyPID, 0.5, 0.1, 0, 0, 9999);
 
 	//pidInit(_fly.flyPID, 0.15, 0.05, 0, 100, 9999);
