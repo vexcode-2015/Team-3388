@@ -3,7 +3,7 @@
 #pragma config(Sensor, in1,    gyroDrive,      sensorAnalog)
 #pragma config(Sensor, in2,    lfIntake,       sensorLineFollower)
 #pragma config(Sensor, in3,    potColour,      sensorPotentiometer)
-#pragma config(Sensor, in4,    potTile,        sensorPotentiometer)
+#pragma config(Sensor, in4,    potSwitcher,        sensorPotentiometer)
 #pragma config(Sensor, dgtl1,  encLeftDr,      sensorQuadEncoder)
 #pragma config(Sensor, dgtl5,  encFlywheel,    sensorQuadEncoder)
 #pragma config(Sensor, dgtl7,  encIntake,      sensorQuadEncoder)
@@ -59,8 +59,6 @@ void pre_auton()
 	initFlyWheel(fly);
 
 	autoNum = 0;
-	//autoNum = readAutoNum();
-
 
 
 
@@ -68,7 +66,7 @@ void pre_auton()
 	GyroInit(in1);
 	bStopTasksBetweenModes = false;
 	playTone(440, 50);
-	wait1Msec(1500);
+	wait1Msec(3000);
 
 
 
@@ -88,6 +86,8 @@ task autonomous()
 	mec_StopTeleop();
 	fw_startFlyControl();
 	GyroZeroAbs();
+
+
 	//auto_rout_mid3stack();
 
 
@@ -102,28 +102,32 @@ task autonomous()
 			writeDebugStreamLine("auto blue detected");
 	}
 
-	int tileThresh = 2000;
-	bool isOutside = true;
-	if(SensorValue[potTile] < tileThresh){
-			writeDebugStreamLine("auto inside detected");
-		isOutside = false;
+	int selection = utl_getPotSet(SensorValue[potSwitcher]);
+	writeDebugStreamLine("selection = %f", selection);
+	if(selection == 1){
+		auto_rout_outsideHerdMid(isRed);
 	}
-	else{
-		writeDebugStreamLine("auto outside detected");
+	else if (selection == 2){
+		auto_rout_outsideHerdMidShoot4(isRed);
+	}
+	else if(selection == 3){
+		auto_rout_otusideHerdGrabStack(isRed);
+	}
+	else if(selection == 4){
+		auto_rout_outsideShoot(isRed);
+	}
+	else if(selection == 5){
+		//shoot
+		auto_rout_insideChallengeMid(isRed,true);
+	}
+	else if(selection == 6){
+		//don't shoot
+		auto_rout_insideChallengeMid(isRed,false);
+	}
+	else if(selection == 7){
+		auto_rout_test();
 	}
 
-	if(SensorValue[potColour] > 1000 && SensorValue[potColour] < 3000){
-		auto_rout_skillsShort();
-	}else{
-		//auto_rout_midShootTwo(isRedIIIIIIIIFI
-		if(!isOutside){
-			auto_rout_mid3stack(isRed);
-   	} else{
-	  	auto_rout_challengedMiddle(isRed);
-		}
-		//auto_rout_getMidBalls(isOutside,isRed);
-	}
-	//\mec_tmpDriveInches(1,0.2,1); * */
 }
 
 
@@ -165,6 +169,7 @@ task usercontrol ()
 
 	 while(true)
 	{
+	//	writeDebugStreamLine("%f", SensorValue[potSwitcher]);
 	//	_mecDrive();
 	//driveTesting();
 
@@ -172,20 +177,19 @@ task usercontrol ()
 
 	//writeDebugStreamLine("%f, \coeff %f  %f SETTLE TIME %f", curr, coeff, Y, nSysTime);
 	//writeDebugStreamLine("%f", GyroGetAngle());
+
 	//printPIDDebug(mec.slave);
 	//writeDebugStreamLine("GYRO ANGLE : %f", GyroGetAngle());
 
 	//printPIDDebug(mec.master);
 	//	writeDebugStreamLine("%f", _intakeController.ballCount);
-
-	//writeDebugStreamLine("%f     %f", motor[mIntake], _fly.pred);
 	//utl_fw_printRecovery();
 
-	//printPIDDebug(_fly.flyPID);
+	 //printPIDDebug(_fly.flyPID);
 
 
 		//	writeDebugStreamLine("%f, %f  %f",error, nAvgBatteryLevel, Y);
 		//writeDebugStreamLine("_fly.currSpeed%f, set %f", FwCalculateSpeed(), _setRPM);
-		wait1Msec(500);
+		wait1Msec(50);
 	}
 }

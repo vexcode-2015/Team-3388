@@ -40,13 +40,13 @@ void pidInit(PID &pid, float kP, float kI, float kD, float epsilon, float slewRa
 
 float pidFilteredOutput(PID &pid){
 	float filteredOut = pid.output;
-	/**if(pid.dT != 0)
+	if(pid.dT != 0)
 	{
 		if(abs(pid.output - pid.lastOutput)/pid.dT > pid.slewRate)
 			filteredOut = pid.lastOutput + pid.slewRate* pid.dT * (pid.output/abs(pid.output));
 		else
 			filteredOut = pid.output;
-	}**/
+	}
 	if(abs(filteredOut) > 127)
 		filteredOut = 127 * filteredOut/abs(filteredOut);
 
@@ -72,13 +72,15 @@ float pidExecute(PID &pid, float error){
 		rate = 0;
 	}
 
-	if(abs(error) > pid.epsilon){
+
+	pid.output = error * pid.kP
+		+ rate * pid.kD;
+
+	if(abs(pid.output) < 127){
 		pid.errorSum += error*pid.dT;
 	}
 
-	pid.output = error * pid.kP
-	+ pid.errorSum * pid.kI
-	+ rate * pid.kD;
+	pid.output +=   pid.errorSum * pid.kI;
 
 	return pidFilteredOutput(pid);
 }

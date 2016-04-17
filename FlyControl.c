@@ -9,16 +9,16 @@
 #include "PIDController.h"
 #include "MecDrive.c"
 
-int SKILLS_SHORT_RPM = 2170;
+int SKILLS_SHORT_RPM = 2100;
 int SKILLS_SHORT_POW = 45;
 int SKILLS_RPM = 1950; //1950
-int SKILLS_POW = 45;
-int SHORT_RPM = 1730;//1690;
-int SHORT_POW = 30;
-int MED_RPM = 2150;
-int MED_POW = 40;
-int LONG_RPM  = 2680;//2480;//2680;//2950;
-int HIGH_POW = 57;//75;
+int SKILLS_POW = 50;
+int SHORT_RPM = 1800;//1690;
+int SHORT_POW = 45;
+int MED_RPM = 2100;
+int MED_POW = 55;
+int LONG_RPM  = 2540;//2480;//2680;//2950;
+int HIGH_POW = 65;//75;
 
 
 typedef struct {
@@ -67,9 +67,16 @@ float FwCalculateSpeed()
 }
 
 
+
+
 void setFlyRpm(int rpm){
 	_fly.setPoint = rpm;
 	pidReset(_fly.flyPID);
+}
+
+void setFlyRpm(int rpm, int pred){
+	setFlyRpm(rpm);
+	_fly.pred = pred;
 }
 
 /**void spinFlyWheelAuto(){
@@ -128,6 +135,10 @@ void fw_ButtonControl(){
 	 }
 }
 
+void fw_shortSpeed(){
+		setFlyRpm(SHORT_RPM);
+		_fly.pred = SHORT_POW;
+}
 
 void fw_fullCourtSpeed(){
 	setFlyRpm(LONG_RPM);
@@ -159,7 +170,7 @@ task flw_tsk_FeedForwardCntrl(){
 	pidReset(_fly.flyPID);
 	//TRY: fairly good fast recovery
 	//prev P 0.
-	pidInit(_fly.flyPID, 0.6, 0.05, 0, 0, 9999);
+	pidInit(_fly.flyPID, 1.0, 0.05, 0, 0, 9999);
 	//pidInit(_fly.flyPID, 0.5, 0.1, 0, 0, 9999);
 
 	//pidInit(_fly.flyPID, 0.15, 0.05, 0, 100, 9999);

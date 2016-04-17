@@ -14,24 +14,25 @@ const int shootDelay = 400;
  };
 
 IntakeController _intakeController;
-const int intakeDriveTicks = 350;//360;
+const int intakeDriveTicks = 340;//360;
 
 
 void driveIntake(int ticks, bool slow){
 	int dTicks = 0;
-	int iTicks = -SensorValue[ _intakeController.enc ];
+	int iTicks = -SensorValue[ _intakeController.enc];
+	float kP = 0.3;
 	while(abs(dTicks) < abs(ticks) && vexRT[Btn7U] == 0){
-		//writeDebugStreamLine("%f   %f",SensorValue[_intakeController.enc], dTicks);
+	writeDebugStreamLine("%f   %f",SensorValue[_intakeController.enc], dTicks);
+			dTicks = (-SensorValue[_intakeController.enc]) - iTicks;
 	if(!slow){
 		motor[ _intakeController.outIntake ] = ticks > 0 ? 127 : -127;
 		motor[ _intakeController.liftIntake ] = ticks > 0 ? 127 : -127;
 	}
 	else{
-
 		motor[ _intakeController.outIntake ] = ticks > 0 ? 127 : -127;
-		motor[ _intakeController.liftIntake ] = ticks > 0 ? 110 : -110;
+		motor[ _intakeController.liftIntake ] = kP * (ticks - dTicks) + 80;//ticks > 0 ? 100 : -100;
 	}
-		dTicks = (-SensorValue[_intakeController.enc]) - iTicks;
+
 		wait1Msec(20);
 	}
 	motor[ _intakeController.liftIntake ] =  0 ;
@@ -66,7 +67,7 @@ bool ballAtLift(){
 
 
 
-const int ultraThresh = 18;
+const int ultraThresh = 22;
 bool ballAtOuter(){
 	return SensorValue[_intakeController.outerSensor] <= ultraThresh;
 }
@@ -155,10 +156,10 @@ void ink_fireWhenReady(int threshold){
 		if(abs(_fly.flyPID.error) < threshold){
 				wait1Msec(30);
 				if(abs(_fly.flyPID.error) < threshold){
-					writeDebugStreamLine("shot error %d",_fly.flyPID.error);
-				driveIntake(intakeDriveTicks);
+					//writeDebugStreamLine("shot error %d",_fly.flyPID.error);
+					driveIntake(intakeDriveTicks,true);
 				if(_intakeController.ballCount == 1){
-						driveIntake(intakeDriveTicks);
+						//driveIntake(intakeDriveTicks,true);
 				}
 				if(_intakeController.ballCount != 0){
 					_intakeController.ballCount--;
@@ -238,9 +239,10 @@ task intakeControl(){
 			}
 		}
 		else if(vexRT[Btn6U] == 1){
-			_decrementBallCount();
-
-			driveIntake(-intakeDriveTicks);
+			motor[_intakeController.outIntake] = -127;
+			while(vexRT[Btn6U] == 1){
+				wait1Msec(50);
+			}
 		}
 		else if(vexRT[Btn7U] == 1){
 			_intakeController.ballCount = 0;
@@ -262,20 +264,30 @@ task intakeControl(){
 			}
 		}
 		while(vexRT[Btn7D] == 1){
-
-			driveIntake(intakeDriveTicks);
-			_intakeController.ballCount = 0;
+			if(abs(_fly.flyPID.error) < 40){
+					motor[_intakeController.outIntake] = 127;
+					motor[_intakeController.liftIntake] = 127;
+			} else{
+					motor[_intakeController.outIntake] = 0;
+						motor[_intakeController.liftIntake] = 0;
+			}
 			wait1Msec(shootDelay);
 		}
 			while(vexRT[Btn7R] == 1){
 				ink_fireWhenReady(30);
-				wait1Msec(20);
+				wait1Msec(200);
 		}
-
-
 		wait1Msec(20);
 	}
 }
+
+void ink_startTask(int balls){
+	outToggle  = 1;
+	startTask(intakeControl);
+	ink_set(127);
+	_intakeController.ballCount = balls;
+}
+
 
 void autonomousShoot(){
 	driveIntake();

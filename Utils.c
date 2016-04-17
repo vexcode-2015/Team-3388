@@ -39,7 +39,7 @@ void setLinMotorPow(int index, int power){
 	if(abs(power) > 127){
 		power = 127 * (power/abs(power));
 	}
-	motor[index] = _MotorMap[abs(power)] * (power/abs(power)) ;
+	motor[index] = power > 0 ? _MotorMap[abs(power)] : -_MotorMap[abs(power)];
 }
 
 void setLinMotorPow(tMotor index, int power, int deadzone){
@@ -147,7 +147,23 @@ float utl_getMax(float a, float b){
 	}
 }
 
-
+int utl_getPotSet(int pot){
+	//position 1
+ 	int errTol = 50;
+ 	int settings[7];
+ 	settings[0] = 4095;
+ 	settings[1] = 3600;
+ 	settings[2] = 2775;
+ 	settings[3] = 1978;
+ 	settings[4] = 1222;
+ 	settings[5] = 497;
+ 	settings[6] = 0;
+	for(int i = 0; i<7; i++){
+		if(abs(settings[i] - pot) < errTol){
+			return i + 1;
+		}
+	}
+}
 
 
 #endif
