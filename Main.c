@@ -159,6 +159,7 @@ void utl_fw_printRecovery(){
 
 task usercontrol ()
 {
+	stopTask(autonomous);
 	fw_stopFlyControl();
 	ink_stopRunningShot();
 	fw_startFlyControl();
