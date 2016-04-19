@@ -6,8 +6,12 @@
 #include "FlyControl.c"
 
 void auto_rout_test(){
+	mec_driveInches(20,100,3000);
+	mec_driveInches(-20,100,3000);
+}
 
-		fw_shortSpeed();
+void runshot(){
+	fw_shortSpeed();
 		ink_startRunningShot(45);
 		mec_driveInches(120,120,5000);
 		ink_stopRunningShot();
@@ -15,32 +19,23 @@ void auto_rout_test(){
 
 }
 
-
 void auto_rout_shoot4(bool isRed){
 	fw_fullCourtSpeed();
+	int mod = isRed ? 1 : -1;
+	stopTask(intakeControl);
+	ink_set(0);
 	for(int i = 0; i<6; i++){
 		ink_waitUntilFire(30);
 	}
-	mec_driveInches(80,120,3000);
-	mec_GyroTurnRel(-180);
-}
-
-
-
-void auto_rout_challengeCornerStack(bool isRed){
+	fw_shortSpeed();
 	ink_startTask(0);
-	mec_driveInches(-35,110,5000);
-	mec_GyroTurnRel(-50);
-	mec_driveInches(-35,110,5000);
-	mec_GyroTurnRel(50 + 180);
-	ink_set(-127);
-	mec_driveInches(-40,70,5000);
-	mec_GyroTurnRel(45);
-	mec_driveInches(-5,100,1500);
-	mec_GyroTurnRel(90);
-	mec_driveInches(45,120,5000);
+	mec_driveInches(80,120,3000);
+	mec_GyroTurnRel(-190 * mod);
+	mec_driveInches(-60, 120,3000);
+	mec_driveInches(10,120,1500);
+	mec_GyroTurnRel(180);
+	ink_set(127);
 }
-
 
 void auto_rout_insideChallengeMid(bool isRed, bool shoot){
 	int mod = 1;
@@ -48,24 +43,29 @@ void auto_rout_insideChallengeMid(bool isRed, bool shoot){
 		mod = -1;
 	}
 
-	setFlyRpm(1300);
+	setFlyRpm(200,20);
   ink_set(127);
 	mec_driveInches(-25,100,5000);
-	mec_driveInches(-20,50,5000);
+	mec_driveInches(-20,100,5000);
 	//mec_GyroTurnRel(180 * mod);
 	fw_midSpeed();
-	mec_driveInches(10,80,2000);
-	mec_GyroTurnRel(110 * mod);
+	mec_driveInches(10,90,2000);
+	mec_GyroTurnRel(112 * mod);
+	ink_set(0);
 	ink_startTask(0);
-	mec_driveInches(-11,30,4000);
+	mec_driveInches(-10,80,1500);
+	mec_driveInches(-10,32,1500);
+	mec_driveInches(15,100,500);
+	mec_driveInches(-15,70,1000);
+
 //	mec_driveInches(5,100,500);
 //	mec_driveInches(-30,60,700);
-	mec_driveInches(60,80,4000);
+	mec_driveInches(65,110,4000);
 	mec_GyroTurnRel(46 * mod);
 	stopTask(intakeControl);
 	if(shoot){
 	ink_set(127);
-	wait1Msec(1500);
+	wait1Msec(1000);
 	}
 	ink_set(-127);
 	mec_driveInches(-30,120,3000);
@@ -101,18 +101,48 @@ void auto_rout_outsideHerdMid(bool isRed){
 	if(isRed){
 		mod = -1;
 	}
-	mec_driveInches(-100,100,5000);
+	mec_driveInches(-115,120,5000);
 	mec_GyroTurnRel(-90 * mod);
-	mec_driveInches(-15,100,3000);
-	mec_GyroTurnRel(-90 * mod);
+	mec_driveInches(-8,127,3000);
+	mec_GyroTurnRel(-80 * mod);
 	ink_set(-127);
-	mec_driveInches(-70,100,5000);
-	mec_GyroTurnRel(-90 * mod);
-	mec_driveInches(-10,100,2000):
+	mec_driveInches(-100,127,4000);
+	mec_GyroTurnRel(-45 * mod);
+	mec_driveInches(-10,127,2000):
 	mec_GyroTurnRel(90 * mod);
-
 }
 
+void auto_rout_challengeMidOutside(bool isRed){
+	int mod = isRed ? 1 : -1;
+	setFlyRpm(1800,50);
+	ink_set(127);
+	mec_driveInches(-85,127,5000);
+	ink_set(0);
+	setFlyRpm(SHORT_RPM + 50, SHORT_POW + 10);
+	fw_shortSpeed();
+	ink_startTask(0);
+	mec_driveInches(-10,80,5000);
+	mec_GyroTurnRel(45 * mod);
+	stopTask(intakeControl);
+	ink_set(127);
+	wait1Msec(1000);
+	mec_GyroTurnRel(-90 * mod);
+	mec_driveInches(-20,30,1500);
+	mec_driveInches(10,80,3000);
+
+	mec_GyroTurnRel(90 * mod);
+	stopTask(intakeControl);
+	ink_set(127);
+	wait1Msec(800);
+	ink_startTask(0);
+	mec_GyroTurnRel(90 * mod);
+	mec_driveInches(-20,80,3000);
+	mec_driveInches(-10,100,2000);
+	mec_GyroTurnRel(-45 * mod);
+	stopTask(intakeControl);
+	ink_set(127);
+	wait1Msec(800);
+}
 
 void auto_rout_outsideHerdMidShoot(bool isRed){
 	int mod = 1;
@@ -240,7 +270,6 @@ void auto_rout_skills(){
 	mec_GyroTurnAbs(105);
 
 	writeDebugStreamLine("before 105 %f", GyroGetAngle());
-	mec_driveInchesTwoStage(-38,-30,120,36,99999);
 	writeDebugStreamLine("3. %f", GyroGetAngle());
 
 
@@ -408,7 +437,6 @@ void auto_rout_midShootTwo(bool isRed){
 		startTask(intakeControl);
 		int mod = isRed ? -1 : 1;
 
-		mec_driveInchesTwoStage(-45,-30,100,30,9999);
 		mec_GyroTurnRel(140 * mod);
 
 		for(int i = 0; i<4; i++){

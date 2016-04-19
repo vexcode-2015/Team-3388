@@ -67,9 +67,9 @@ float _getRightEnc(){
 	return -SensorValue[mec.encRight];
 }
 
-float GYRO_KP = 6.5/1.7;//2;
-float GYRO_KI = 2.8/2.0;//3;
-float GYRO_KD = 3.3/8.0; //0.34
+float GYRO_KP = 6.9 * 0.6;//6.5/1.7;
+float GYRO_KI = 1.2 / 2.0;//2.8/2.0;
+float GYRO_KD = 1.2 / 3.2;//3.3/8.0;
 float GYRO_INTLIM = 1270;
 float GYRO_ERROR_THRESH = 2;
 
@@ -91,10 +91,11 @@ void mec_GyroTurnAbs(int degrees, bool escapable){
 	float initTicksL = _getLeftEnc();
 	float initTicksR = _getRightEnc();
 
-	int integralLimit = 20 / mec.gyroPID.kI;
+	int integralLimit = 15 / mec.gyroPID.kI;
 	int escapeThresh = 30;
 
 	float lastLTicks = initTicksL;
+	long initTime = nPgmTime;
 	while(!targetReached){
 
 		timeInit = nPgmTime;
@@ -113,6 +114,10 @@ void mec_GyroTurnAbs(int degrees, bool escapable){
 		float slaveOut = pidExecute(mec.slave, slaveErr);
 		float driveOut = pidExecute(mec.gyroPID,error);
 
+		writeDebugStreamLine("%f\t%f", nPgmTime - initTime, error);
+
+
+
 		if(sgn(mec.gyroPID.error) != sgn(mec.gyroPID.lastError)){
 			mec.gyroPID.errorSum = 0;
 		}
@@ -121,7 +126,7 @@ void mec_GyroTurnAbs(int degrees, bool escapable){
 			mec.gyroPID.errorSum = integralLimit * mec.gyroPID.errorSum/abs(mec.gyroPID.errorSum);
 		}
 
-		int minVal = 10;
+		int minVal = 0;
 		if(abs(error) > GYRO_ERROR_THRESH){
 			atTargetTime = nPgmTime;
 			if(abs(driveOut) < minVal){
@@ -130,9 +135,7 @@ void mec_GyroTurnAbs(int degrees, bool escapable){
 				}
 			}
 		}
-		if(abs(driveOut) > 100){
-			driveOut = 100 * driveOut / abs(driveOut);
-		}
+
 		_setLeftDrivePow((driveOut + slaveOut));
 		_setRightDrivePow(-(driveOut - slaveOut));
 
@@ -162,17 +165,17 @@ void mec_GyroTurnRel(int degrees){
 
 const int DRIVE_SAT_TIME = 200;
 
-float _DRIVE_KP = 0.7/1.7;
-float _DRIVE_KI = 0.2/2.0;
-float _DRIVE_KD = 0.6/8.0;
-
-float _SLAVE_KP = 0.4;
-float _SLAVE_KD = 0;
-float _SLAVE_KI = 0.01;
+float _DRIVE_KP = 0.9 * 0.6;//0.7/1.7;
+float _DRIVE_KI = 0.880 / 2.0;//0.2/2.0;
+float _DRIVE_KD = 0.880 / 8.0;//0.6/8.0;
+float _DRIVE_SLEW = 1270;
+float _SLAVE_KP = 0.4;//0.4;
+float _SLAVE_KI = 0.03;
+float _SLAVE_KD = 0.05;//0.880 / 8.0;//0.01;
 
 void mec_driveInches(float inches, int maxSpeed,int expiryms, float turnRatio = 1){
 	//def constants
-	pidInit(mec.master, _DRIVE_KP,_DRIVE_KI,_DRIVE_KD,0,1270);
+	pidInit(mec.master, _DRIVE_KP,_DRIVE_KI,_DRIVE_KD,0,_DRIVE_SLEW);
 	pidInit(mec.slave, _SLAVE_KP,_SLAVE_KI,_SLAVE_KD,0,1270);
 	pidReset(mec.master);
 	pidReset(mec.slave);
@@ -195,15 +198,18 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms, float turnRatio = 
 	writeDebugStreamLine("starting");
 	float initAngle = GyroGetAngle();
 	while(!targetReached){
-		if(timeInit + 400 > nPgmTime){
+		/** if(timeInit + 400 > nPgmTime){
 			mec.master.slewRate = 400;
 		} else{
 			mec.master.slewRate = 1270;
-		}
+		} **/
 
 		//left encoder is master
 		float error = setPoint - (( _getLeftEnc() - initDriveL) + (_getRightEnc() - initDriveR)) / 2;
 		float slaveErr = ((_getLeftEnc() - initDriveL) / turnRatio) - ((_getRightEnc()- initDriveR) * turnRatio);
+
+		writeDebugStreamLine("%f",slaveErr);
+
 
 		if(sgn(mec.master.error) != sgn(mec.master.errorSum)){
 			mec.master.errorSum = 0;
@@ -228,7 +234,7 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms, float turnRatio = 
 		float diffRatio = 1;
 		float leftPow = driveOut / turnRatio  - slaveOut;
 		float rightPow = driveOut * turnRatio + slaveOut ;
-		if(leftPow > maxSpeed || rightPow > maxSpeed){
+		if(abs(leftPow) > 127 || abs(rightPow) > 127){
 			//get ratio of right to left pow
 			diffRatio =  rightPow / leftPow;
 
@@ -239,16 +245,6 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms, float turnRatio = 
 				rightPow = rightPow > 0 ? maxSpeed : -maxSpeed;
 				leftPow = rightPow / diffRatio;
 
-			}
-			if(diffRatio > turnRatio){
-				//right is faster
-		 		//set right pow to 127
-				leftPow = leftPow > 0 ? maxSpeed : -maxSpeed;
-				rightPow = diffRatio * leftPow;
-
-			} else{
-				rightPow = rightPow > 0 ? maxSpeed : -maxSpeed;
-				leftPow = (rightPow) / diffRatio;
 			}
 		}
 

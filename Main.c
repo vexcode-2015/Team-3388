@@ -1,8 +1,10 @@
+
 #pragma config(UART_Usage, UART1, uartVEXLCD, baudRate19200, IOPins, None, None)
 #pragma config(UART_Usage, UART2, uartNotUsed, baudRate4800, IOPins, None, None)
 #pragma config(Sensor, in1,    gyroDrive,      sensorAnalog)
 #pragma config(Sensor, in2,    lfIntake,       sensorLineFollower)
 #pragma config(Sensor, in3,    potColour,      sensorPotentiometer)
+#pragma config(Sensor, in5,    lfTop,        sensorPotentiometer)
 #pragma config(Sensor, in4,    potSwitcher,        sensorPotentiometer)
 #pragma config(Sensor, dgtl1,  encLeftDr,      sensorQuadEncoder)
 #pragma config(Sensor, dgtl5,  encFlywheel,    sensorQuadEncoder)
@@ -51,7 +53,7 @@ void pre_auton()
 	dr.fl = mDrFl; dr.fr = mDrFr; dr.bl = mDrBl;	dr.br = mDrBr; dr.ml = mDrMl; dr.mr = mDrMr;
 	dr.gyro = gyroDrive; dr.encLeft = encLeftDr; dr.encRight = encRightDr;
 
-	IntakeInit(mIntake, mIntake2, lfIntake, ultraIntake, encIntake);
+	IntakeInit(mIntake, mIntake2, lfIntake, ultraIntake, encIntake, lfTop);
 	initMecDrive(dr);
 
 	fly.f1 = mFly1; fly.f2 = mFly2;
@@ -111,7 +113,7 @@ task autonomous()
 		auto_rout_outsideHerdMidShoot4(isRed);
 	}
 	else if(selection == 3){
-		auto_rout_otusideHerdGrabStack(isRed);
+		auto_rout_challengeMidOutside(isRed);
 	}
 	else if(selection == 4){
 		auto_rout_shoot4(isRed);
@@ -160,7 +162,6 @@ task usercontrol ()
 	fw_stopFlyControl();
 	ink_stopRunningShot();
 	fw_startFlyControl();
-	stopTask(autonomous);joy1_Buttons
 	GyroResetAngle();
 
 	mec_StartTeleop();
@@ -172,7 +173,6 @@ task usercontrol ()
 	{
 
 
-	//	writeDebugStreamLine("%f", SensorValue[potSwitcher]);
 	//	_mecDrive();
 	//driveTesting();
 

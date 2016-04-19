@@ -18,12 +18,6 @@ const unsigned int _MotorMap[128] =
  88, 89, 89, 90, 90,127,127,127
 };
 
-int lightIndex = 0;
-void setStatusLight(int light){
-	lightIndex = light;
-}
-
-
 int threshold(int in, int deadzone){
 	if(abs(in) < deadzone){
 		return 0;
@@ -47,81 +41,6 @@ void setLinMotorPow(tMotor index, int power, int deadzone){
 		power = power * (power/abs(power));
 	}
 	motor[index] = threshold(power > 0 ? _MotorMap[abs(power)] : -1 * _MotorMap[abs(power)], deadzone);
-}
-
-
-void statusLightSet(int status){
-	SensorValue[lightIndex] = status;
-}
-
-void printCalibratingGyro(){
-	clearLCDLine(0);																						// Clear line 1 (0) of the LCD
-	clearLCDLine(1);
-	displayLCDString(0, 0, "Calibrating gyro... ");
-}
-
-void printBatteryToLCD(){
-	clearLCDLine(0);																						// Clear line 1 (0) of the LCD
-	clearLCDLine(1);
-	displayLCDString(0, 0, "Primary: ");
-	string mainBattery;
-	string backupBattery;
-	sprintf(mainBattery, "%1.2f%c", nImmediateBatteryLevel/1000.0,'V'); //Build the value to be displayed
-	displayNextLCDString(mainBattery);
-
-	//Display the Backup battery voltage
-	displayLCDString(1, 0, "Backup: ");
-	sprintf(backupBattery, "%1.2f%c", BackupBatteryLevel/1000.0, 'V');		//Build the value to be displayed
-	displayNextLCDString(backupBattery);
-
-}
-
-int readAutoNum(){
-	int autoSelect = 0;
-	while(nLCDButtons != 2){ //While center not pressed
-		if(nLCDButtons == 0) {//No button pressed
-			printBatteryToLCD();
-			wait1Msec(10); //Do nothing
-		}
-		else{ //Some button was pressed
-			if(nLCDButtons == 1){
-				clearLCDLine(0);																						// Clear line 1 (0) of the LCD
-				clearLCDLine(1);
-				if(autoSelect != 2){
-					 autoSelect = 2;
-					displayLCDString(0, 0, "Blue Side Auto Selected");
-				}
-				else{
-					autoSelect = 0;
-					displayLCDString(0,0, "Center Auto Selected");
-				}
-			while((nLCDButtons == 1)){
-				wait1Msec(50);
-			}
-		 }
-		 else if(nLCDButtons == 4){
-				clearLCDLine(0);																						// Clear line 1 (0) of the LCD
-		clearLCDLine(1);
-				if(autoSelect != 1){
-					autoSelect = 1;
-					displayLCDString(0, 0, "Red Side Auto Selected");
-			}
-		else{
-					autoSelect = 0;
-					displayLCDString(0,0, "Center Auto Selected");
-				}
-		while((nLCDButtons == 4)){
-		wait1Msec(50);
-		}
-				//Increment if right press
-			}
-			//Update display
-			while(nLCDButtons != 0){//Wait for release
-				wait1Msec(10); //Wait for multitasking.
-			}
-		}
-	}
- return 0;
 }
 
 task utl_DebugHelperTask(){
