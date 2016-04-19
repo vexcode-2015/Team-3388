@@ -36,7 +36,6 @@
 
 Fw_Controller fly;
 DriveBase dr;
-int autoNum = 0;
 
 void motorTest(){
 	for(int i = 0; i<10; i++){
@@ -48,60 +47,55 @@ void motorTest(){
 
 void pre_auton()
 {
-
-	//bStopTasksBetweenModes = false;
-	dr.fl = mDrFl; dr.fr = mDrFr; dr.bl = mDrBl;	dr.br = mDrBr; dr.ml = mDrMl; dr.mr = mDrMr;
-	dr.gyro = gyroDrive; dr.encLeft = encLeftDr; dr.encRight = encRightDr;
-
+	bStopTasksBetweenModes = false;
+	
+	//drive
+	//motors
+	dr.fl = mDrFl; dr.fr = mDrFr; dr.bl = mDrBl;	
+	dr.br = mDrBr; dr.ml = mDrMl; dr.mr = mDrMr;
+	//sensors
+	dr.encLeft = encLeftDr; dr.encRight = encRightDr;
+	dr.gyro = gyroDrive; 
+	
+	//intake init
 	IntakeInit(mIntake, mIntake2, lfIntake, ultraIntake, encIntake, lfTop);
 	initMecDrive(dr);
 
+	//flywheel init
 	fly.f1 = mFly1; fly.f2 = mFly2;
 	fly.enc = encFlywheel;
 	initFlyWheel(fly);
 
-	autoNum = 0;
-
-
-
-	printCalibratingGyro();
+	//calibrate gyro
 	GyroInit(in1);
-	bStopTasksBetweenModes = false;
 	playTone(440, 50);
+	playTone(440/2, 50);
+	playTone(440*2, 50);
 	wait1Msec(3000);
 
-
-
-//	while((nVexRCReceiveState & vrDisabled)){
-//		printBatteryToLCD();
-//	}
 }
-	bool redSide = true;
 
 task autonomous()
 {
 	stopTask(intakeControl);
-		ink_set(0);
-		motor[mIntake] = 0;
-		motor[mIntake2] = 0;
 	stopTask(usercontrol);
 	mec_StopTeleop();
 	fw_startFlyControl();
+	ink_set(0);
+
+
 	GyroZeroAbs();
 
 
-	//auto_rout_mid3stack();
-
-
 	int colourThresh = 2000;
-
 	bool isRed = false;
+	
 	if(SensorValue[potColour] > colourThresh ){
 		writeDebugStreamLine("auto red detected");
 		isRed = true;
 	}
 	else{
-			writeDebugStreamLine("auto blue detected");
+		writeDebugStreamLine("auto blue detected");
 	}
 
 	int selection = utl_getPotSet(SensorValue[potSwitcher]);
@@ -131,21 +125,6 @@ task autonomous()
 	}
 }
 
-
-void driveTesting(){
-		if(vexRT[Btn7D] == 1){
-			printDriveEncoders();
-		}
-
-		if(vexRT[Btn7L] == 1){
-			zeroDriveEncoders();
-		}
-}
-
-
-
-
-
 void utl_fw_printRecovery(){
 	long init = nPgmTime;
 	if(abs(_fly.flyPID.error) > 50){
@@ -155,7 +134,6 @@ void utl_fw_printRecovery(){
 		writeDebugStreamLine("SETTLE TIME %f", nPgmTime - init);
 	}
 }
-
 
 task usercontrol ()
 {
@@ -170,10 +148,10 @@ task usercontrol ()
 
 
 
-	 while(true)
+	while(true)
 	{
 
-
+	
 	//	_mecDrive();
 	//driveTesting();
 

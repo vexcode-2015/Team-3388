@@ -1,7 +1,6 @@
 
 #ifndef FlyControl.c
 #define FlyControl.c
-//old 20
 #define FW_LOOP_SPEED	20
 
 
@@ -34,7 +33,6 @@ typedef struct {
 Fw_Controller _fly;
 
 
-
 void _updateFlyWheelLin(int power){
 	if(power > 127){
 		power = 127;
@@ -46,7 +44,6 @@ void _updateFlyWheelLin(int power){
 void _updateFlyWheel(int power){
 	_updateFlyWheelLin(power);
 }
-
 
 long	nSysTime_last;
 long	encoder_counts;
@@ -66,9 +63,6 @@ float FwCalculateSpeed()
 	return _fly.currSpeed;
 }
 
-
-
-
 void setFlyRpm(int rpm){
 	_fly.setPoint = rpm;
 	pidReset(_fly.flyPID);
@@ -79,27 +73,7 @@ void setFlyRpm(int rpm, int pred){
 	_fly.pred = pred;
 }
 
-/**void spinFlyWheelAuto(){
-	float rpm = get_required_rpm(trk_getNetDistance());
-
-	_setFlyWheel(rpm);
-	if(rpm < MED_RPM){
-
-		_fly.pred = MED_POW;
-		if(rpm < LOW_RPM){
-			_fly.pred = LOW_POW;
-		}
-	}
-	else{
-		_fly.pred = HIGH_POW;
-	}
-
-}**/
-
-
-
 void fw_ButtonControl(){
-	//btnControl
 	if(vexRT[Btn8D]){
 		if(_fly.pred == 0){
 				setFlyRpm(SKILLS_SHORT_RPM);
@@ -115,7 +89,6 @@ void fw_ButtonControl(){
 					wait1Msec(20);
 			}
 		}
-
 	}
 	if(vexRT[Btn8L]){
 		setFlyRpm(SHORT_RPM);
@@ -129,15 +102,11 @@ void fw_ButtonControl(){
 		setFlyRpm(LONG_RPM);
 		_fly.pred = HIGH_POW;
 	}
-	 if(vexRT[Btn7R]){
-	 	//spinFlyWheelAuto();
-	 	//pidReset(_fly.flyPID);
-	 }
 }
 
 void fw_shortSpeed(){
-		setFlyRpm(SHORT_RPM);
-		_fly.pred = SHORT_POW;
+	setFlyRpm(SHORT_RPM);
+	_fly.pred = SHORT_POW;
 }
 
 void fw_fullCourtSpeed(){
@@ -160,33 +129,21 @@ void fw_midSpeed(){
 	_fly.pred = MED_POW;
 }
 
-
-
-
-
 bool deployLift = false;
-
 task flw_tsk_FeedForwardCntrl(){
 	pidReset(_fly.flyPID);
-	//TRY: fairly good fast recovery
-	//prev P 0.
 	pidInit(_fly.flyPID, 0.6, 0.05, 0, 0, 9999);
-	//pidInit(_fly.flyPID, 0.5, 0.1, 0, 0, 9999);
 
-	//pidInit(_fly.flyPID, 0.15, 0.05, 0, 100, 9999);
-
-	//Good results at low rpms
-	//pidInit(_fly.flyPID, 0.1, 0.01, 0, 100, 9999);
-
-	//dislike slow
-	//pidInit(_fly.flyPID, 0.2, 0.001, 0, 100, 9999);
-
-	int integralLimit = 24 / _fly.flyPID.kI;
+	int integralLimit;
+	if(_fly.flyPID.kI == 0){
+		integralLimit = 0;
+	} else{
+		integralLimit = 24 / _fly.flyPID.kI;
+	}
+	
 	float output = 0;
 	float initTime = nPgmTime;
-	//basically for this we need a guess motor power
 	while(true){
-
 		fw_ButtonControl();
 		//printPIDDebug(_fly.flyPID);
 		//we do not want to zero our error sum when we cross
@@ -199,15 +156,9 @@ task flw_tsk_FeedForwardCntrl(){
 		float dTime = nPgmTime - initTime;
 		initTime = nPgmTime;
 
-		//filter output
-		float coeff = dTime/FW_LOOP_SPEED;
-		if(coeff < 1){
-			coeff = 1;
-		}
-
-
+		
 		playTone(_fly.currSpeed/2,2);
-		output = _fly.pred + ((outVal) * (coeff));
+		output = _fly.pred + outVal;
 
 
 		if(output < 0){
@@ -228,49 +179,12 @@ task flw_tsk_FeedForwardCntrl(){
 	}
 }
 
-
-task flw_task_bangbang(){
-	while(true){
-
-		fw_ButtonControl();
-		_fly.currSpeed =  FwCalculateSpeed();
-		float error = _fly.setPoint - _fly.currSpeed;
-		writeDebugStreamLine("%f",error);
-
-		float outVal = 0;
-		if(abs(error) > 10){
-			outVal = error > 0 ? 127 : 0;
-		}
-
-
-		float output = outVal;
-
-		if(output < 0){
-			output = 0;
-		}
-		if(output > 127){
-			output = 127;
-		}
-		_updateFlyWheel(output);
-		delay(FW_LOOP_SPEED);
-	}
-}
-
-
-
-
 void initFlyWheel(Fw_Controller* initMotors){
 	_fly.currSpeed = 0;
 	_fly = *initMotors;
 	_fly.f1 = initMotors->f1;
 	_fly.f2 = initMotors->f2;
 	_fly.enc = initMotors->enc;
-	//writeDebugStreamLine("FLY %d %d %d %d", _fly.f1,_fly.f2, _fly.f3, _fly.f4);
-
-
-
-	//startTask(flw_task_bangbang,20);
-	//startTask(flw_task_PIDCntrl, 20);
 }
 
 void fw_stopFlyControl(){
