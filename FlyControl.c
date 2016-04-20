@@ -8,16 +8,16 @@
 #include "PIDController.h"
 #include "MecDrive.c"
 
-int SKILLS_SHORT_RPM = 2130;
+int SKILLS_SHORT_RPM = 2100;
 int SKILLS_SHORT_POW = 45;
 int SKILLS_RPM = 1950; //1950
 int SKILLS_POW = 50;
-int SHORT_RPM = 1810;//1690;
-int SHORT_POW = 35;
-int MED_RPM = 2070;
+int SHORT_RPM = 1830;//1690;
+int SHORT_POW = 30;
+int MED_RPM = 2140;
 int MED_POW = 45;
-int LONG_RPM  = 2540;//2480;//2680;//2950;
-int HIGH_POW = 65;//75;
+int LONG_RPM  = 2520;//2480;//2680;//2950;
+int HIGH_POW = 48;//75;
 
 
 typedef struct {
@@ -132,7 +132,7 @@ void fw_midSpeed(){
 bool deployLift = false;
 task flw_tsk_FeedForwardCntrl(){
 	pidReset(_fly.flyPID);
-	pidInit(_fly.flyPID, 0.6, 0.05, 0, 0, 9999);
+	pidInit(_fly.flyPID, 1.2, 0.05, 0, 0, 9999);
 
 	int integralLimit;
 	if(_fly.flyPID.kI == 0){
@@ -140,7 +140,7 @@ task flw_tsk_FeedForwardCntrl(){
 	} else{
 		integralLimit = 24 / _fly.flyPID.kI;
 	}
-	
+
 	float output = 0;
 	float initTime = nPgmTime;
 	while(true){
@@ -156,11 +156,11 @@ task flw_tsk_FeedForwardCntrl(){
 		float dTime = nPgmTime - initTime;
 		initTime = nPgmTime;
 
-		
+
+
 		playTone(_fly.currSpeed/2,2);
+
 		output = _fly.pred + outVal;
-
-
 		if(output < 0){
 			output = 0;
 		}

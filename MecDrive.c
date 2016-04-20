@@ -170,7 +170,7 @@ float _DRIVE_KI = 0.880 / 2.0;//0.2/2.0;
 float _DRIVE_KD = 0.880 / 8.0;//0.6/8.0;
 float _DRIVE_SLEW = 1270;
 float _SLAVE_KP = 0.4;//0.4;
-float _SLAVE_KI = 0.03;
+float _SLAVE_KI = 0.02;
 float _SLAVE_KD = 0.05;//0.880 / 8.0;//0.01;
 
 void mec_driveInches(float inches, int maxSpeed,int expiryms, float turnRatio = 1){

@@ -43,21 +43,27 @@ void auto_rout_insideChallengeMid(bool isRed, bool shoot){
 	if(isRed){
 		mod = -1;
 	}
-	setFlyRpm(200,20);
-	ink_set(127);
-	mec_driveInches(-25,110,5000);
-	mec_driveInches(-20,110,5000);
-	fw_midSpeed();
-	mec_driveInches(10,90,2000);
-	mec_GyroTurnRel(112 * mod);
 	ink_set(0);
 	ink_startTask(0);
-	mec_driveInches(-10,80,1500);
-	mec_driveInches(-10,32,1500);
-	mec_driveInches(15,100,500);
-	mec_driveInches(-15,70,1000);
-	mec_driveInches(65,110,4000);
-	mec_GyroTurnRel(46 * mod);
+	fw_midSpeed();
+	mec_driveInches(-25,100,5000);
+	mec_driveInches(-20,100,5000);
+	mec_GyroTurnRel(180 * mod);
+	stopTask(intakeControl);
+	ink_set(-127);
+
+
+	mec_driveInches(-10,90,2000);
+		wait1Msec(300);
+	mec_GyroTurnRel(-70 * mod);
+	ink_set(0);
+	ink_startTask(0);
+	mec_driveInches(-8,80,2000);
+	mec_driveInches(-20,30,1500);
+	mec_driveInches(5,127,500);
+	mec_driveInches(-14,80,1000);
+	mec_driveInches(57,110,4000);
+	mec_GyroTurnRel(45 * mod);
 	stopTask(intakeControl);
 	if(shoot){
 		ink_set(127);
@@ -68,16 +74,14 @@ void auto_rout_insideChallengeMid(bool isRed, bool shoot){
 	mec_driveInches(80,127,3000);
 }
 
-//OUTSIDE AUTOS 
+//OUTSIDE AUTOS
 void auto_rout_outsideRunShot(bool isRed){
 	int mod = isRed ? 1 : -1;
 	fw_shortSpeed();
 	ink_startRunningShot(45);
-	mec_driveInches(125,115,5000);
+	mec_driveInches(120,120,4000);
 	ink_stopRunningShot();
-	mec_driveInches(-5);
-	ink_set(127);
-	wait1Msec(800);
+	ink_set(0);
 	mec_GyroTurnRel(90);
 	mec_driveInches(-23,110,2000);
 	mec_GyroTurnRel(-90);
@@ -109,7 +113,7 @@ void auto_rout_outsideShoot(bool isRed){
 	mec_driveInches(10,90,1000);
 }
 
-//positive = turn right 
+//positive = turn right
 void auto_rout_outsideHerdMid(bool isRed){
 	int mod = 1;
 	if(isRed){
@@ -126,26 +130,28 @@ void auto_rout_outsideHerdMid(bool isRed){
 	mec_GyroTurnRel(90 * mod);
 }
 
-//charges middle stacks 
+//charges middle stacks
 void auto_rout_challengeMidOutside(bool isRed){
 	int mod = isRed ? 1 : -1;
 	setFlyRpm(1800,50);
 	ink_set(127);
-	mec_driveInches(-85,127,5000);
+	mec_driveInches(-70,127,5000);
 	ink_set(0);
-	setFlyRpm(SHORT_RPM + 50, SHORT_POW + 10);
-	fw_shortSpeed();
+	setFlyRpm(SHORT_RPM + 100, SHORT_POW + 10);
 	ink_startTask(0);
-	mec_driveInches(-10,80,5000);
-	mec_GyroTurnRel(45 * mod);
+	mec_driveInches(-30,120,5000);
+	mec_GyroTurnRel(180 - 33 * mod);
 	stopTask(intakeControl);
 	ink_set(127);
 	wait1Msec(1000);
-	mec_GyroTurnRel(-90 * mod);
-	mec_driveInches(-20,30,1500);
-	mec_driveInches(10,80,3000);
+	ink_set(0);
+	ink_startTask(0);
+	mec_GyroTurnRel(-110 * mod);
+	mec_driveInches(-15,127,3000);
+	mec_driveInches(-10,30,1500);
+	mec_driveInches(8,127,3000);
 
-	mec_GyroTurnRel(90 * mod);
+	mec_GyroTurnRel(110 * mod);
 	stopTask(intakeControl);
 	ink_set(127);
 	wait1Msec(800);
@@ -167,9 +173,9 @@ void auto_rout_outsideHerdMidShoot(bool isRed){
 	fw_shortSpeed();
 	ink_startTask(0);
 	if(!isRed){
-	mec_driveInches(-90,115,7000,0.97);
+		mec_driveInches(-90,115,7000,0.97);
 	} else{
-
+		mec_driveInches(-90,115,7000,1.03);
 	}
 	setFlyRpm(SHORT_RPM + 60, SHORT_POW + 5);
 	mec_driveInches(-22,60,3000);

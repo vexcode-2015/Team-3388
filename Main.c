@@ -1,4 +1,3 @@
-
 #pragma config(UART_Usage, UART1, uartVEXLCD, baudRate19200, IOPins, None, None)
 #pragma config(UART_Usage, UART2, uartNotUsed, baudRate4800, IOPins, None, None)
 #pragma config(Sensor, in1,    gyroDrive,      sensorAnalog)
@@ -48,15 +47,15 @@ void motorTest(){
 void pre_auton()
 {
 	bStopTasksBetweenModes = false;
-	
+
 	//drive
 	//motors
-	dr.fl = mDrFl; dr.fr = mDrFr; dr.bl = mDrBl;	
+	dr.fl = mDrFl; dr.fr = mDrFr; dr.bl = mDrBl;
 	dr.br = mDrBr; dr.ml = mDrMl; dr.mr = mDrMr;
 	//sensors
 	dr.encLeft = encLeftDr; dr.encRight = encRightDr;
-	dr.gyro = gyroDrive; 
-	
+	dr.gyro = gyroDrive;
+
 	//intake init
 	IntakeInit(mIntake, mIntake2, lfIntake, ultraIntake, encIntake, lfTop);
 	initMecDrive(dr);
@@ -89,7 +88,7 @@ task autonomous()
 
 	int colourThresh = 2000;
 	bool isRed = false;
-	
+
 	if(SensorValue[potColour] > colourThresh ){
 		writeDebugStreamLine("auto red detected");
 		isRed = true;
@@ -104,9 +103,10 @@ task autonomous()
 		auto_rout_outsideHerdMid(isRed);
 	}
 	else if (selection == 2){
-		auto_rout_outsideHerdMidShoot4(isRed);
+		auto_rout_outsideRunShot(isRed);
 	}
 	else if(selection == 3){
+		//backwards towards mid stacks
 		auto_rout_challengeMidOutside(isRed);
 	}
 	else if(selection == 4){
@@ -138,6 +138,7 @@ void utl_fw_printRecovery(){
 task usercontrol ()
 {
 	stopTask(autonomous);
+
 	fw_stopFlyControl();
 	ink_stopRunningShot();
 	fw_startFlyControl();
@@ -151,7 +152,7 @@ task usercontrol ()
 	while(true)
 	{
 
-	
+
 	//	_mecDrive();
 	//driveTesting();
 
@@ -168,10 +169,10 @@ task usercontrol ()
 	//utl_fw_printRecovery();
 
 	 //printPIDDebug(_fly.flyPID);
+	//writeDebugStreamLine("%f, %f", _fly.pred, motor[mFly1]);
 
-
-		//	writeDebugStreamLine("%f, %f  %f",error, nAvgBatteryLevel, Y);
-		//writeDebugStreamLine("_fly.currSpeed%f, set %f", FwCalculateSpeed(), _setRPM);
+	//	writeDebugStreamLine("%f, %f  %f",error, nAvgBatteryLevel, Y);
+	//writeDebugStreamLine("_fly.currSpeed%f, set %f", FwCalculateSpeed(), _setRPM);
 		wait1Msec(50);
 	}
 }
