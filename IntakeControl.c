@@ -184,7 +184,7 @@ void ink_fireWhenReady(int threshold){
 				wait1Msec(30);
 		if(abs(_fly.flyPID.error) < threshold){
 				//writeDebugStreamLine("shot error %d",_fly.flyPID.error);
-					driveIntake(100,true);
+					driveIntake(100,false);
 
 				if(_intakeController.ballCount == 1){
 						//driveIntake(intakeDriveTicks,true);
@@ -194,7 +194,7 @@ void ink_fireWhenReady(int threshold){
 				}
 		}
 	}
-	autoIntake();
+	//autoIntake();
 }
 
 void ink_waitUntilFire(int errorThresh){
@@ -202,7 +202,7 @@ void ink_waitUntilFire(int errorThresh){
 	while(!fired){
 		driveIntake(intakeDriveTicks,true,false);
 		if(abs(_fly.flyPID.error) < errorThresh){
-			driveIntake(200,true);
+			driveIntake(100,true);
 			fired = true;
 		}
 		wait1Msec(50);

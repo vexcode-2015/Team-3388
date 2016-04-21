@@ -31,7 +31,7 @@ void auto_rout_shoot4(bool isRed){
 	ink_startTask(0);
 	mec_driveInches(80,120,3000);
 	mec_GyroTurnRel(-190 * mod);
-	mec_driveInches(-60, 120,3000);
+	mec_driveInches(-60, 120,2000);
 	mec_driveInches(10,120,1500);
 	mec_GyroTurnRel(180);
 	ink_set(127);
@@ -47,13 +47,13 @@ void auto_rout_insideChallengeMid(bool isRed, bool shoot){
 	ink_startTask(0);
 	fw_midSpeed();
 	mec_driveInches(-25,100,5000);
-	mec_driveInches(-20,100,5000);
+	mec_driveInches(-15,100,5000);
 	mec_GyroTurnRel(180 * mod);
 	stopTask(intakeControl);
 	ink_set(-127);
 
 
-	mec_driveInches(-10,90,2000);
+	mec_driveInches(-12.5,90,2000);
 		wait1Msec(300);
 	mec_GyroTurnRel(-70 * mod);
 	ink_set(0);

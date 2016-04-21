@@ -8,16 +8,16 @@
 #include "PIDController.h"
 #include "MecDrive.c"
 
-int SKILLS_SHORT_RPM = 2100;
+int SKILLS_SHORT_RPM = 2130;
 int SKILLS_SHORT_POW = 45;
 int SKILLS_RPM = 1950; //1950
 int SKILLS_POW = 50;
-int SHORT_RPM = 1830;//1690;
+int SHORT_RPM = 1810;//1690;
 int SHORT_POW = 30;
-int MED_RPM = 2140;
+int MED_RPM = 2100;
 int MED_POW = 45;
-int LONG_RPM  = 2520;//2480;//2680;//2950;
-int HIGH_POW = 48;//75;
+int LONG_RPM  = 2560;//2480;//2680;//2950;
+int HIGH_POW = 59;//75;
 
 
 typedef struct {
@@ -59,7 +59,7 @@ float FwCalculateSpeed()
 	delta_enc = (encoder_counts - encoder_counts_last);
 	encoder_counts_last = encoder_counts;
 	float newSpeed = (1000.0 / delta_ms) * delta_enc;
-	_fly.currSpeed = (_fly.currSpeed * 0.65) + newSpeed * 0.35;
+	_fly.currSpeed = (_fly.currSpeed * 0.6) + newSpeed * 0.4;
 	return _fly.currSpeed;
 }
 
@@ -132,20 +132,20 @@ void fw_midSpeed(){
 bool deployLift = false;
 task flw_tsk_FeedForwardCntrl(){
 	pidReset(_fly.flyPID);
-	pidInit(_fly.flyPID, 0.9, 0.05, 0, 0, 9999);
+	pidInit(_fly.flyPID, 0.6, 0.05, 0, 0, 999999);
 
 	int integralLimit;
 	if(_fly.flyPID.kI == 0){
 		integralLimit = 0;
 	} else{
-		integralLimit = 24 / _fly.flyPID.kI;
+		integralLimit = 13.0 / _fly.flyPID.kI;
 	}
 
 	float output = 0;
 	float initTime = nPgmTime;
 	while(true){
 		fw_ButtonControl();
-		//printPIDDebug(_fly.flyPID);
+		//
 		//we do not want to zero our error sum when we cross
 		if(abs(_fly.flyPID.errorSum) > integralLimit){
 			_fly.flyPID.errorSum = integralLimit * _fly.flyPID.errorSum/(abs(_fly.flyPID.errorSum));

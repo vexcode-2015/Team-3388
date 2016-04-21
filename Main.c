@@ -155,8 +155,10 @@ task usercontrol ()
 
 	while(true)
 	{
+	//	printPIDDebug(_fly.flyPID);
+	//	writeDebugStreamLine("%f, %f", _fly.pred, motor[mFly1]);
 	//	utl_fw_printRecovery();
-	writeDebugStreamLine("%f", _fly.flyPID.error);
+	//writeDebugStreamLine("%f", _fly.flyPID.error);
 	//	_mecDrive();
 	//driveTesting();
 
@@ -177,6 +179,6 @@ task usercontrol ()
 
 	//	writeDebugStreamLine("%f, %f  %f",error, nAvgBatteryLevel, Y);
 	//writeDebugStreamLine("_fly.currSpeed%f, set %f", FwCalculateSpeed(), _setRPM);
-		wait1Msec(50);
+		wait1Msec(500);
 	}
 }
