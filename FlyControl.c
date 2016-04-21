@@ -59,7 +59,7 @@ float FwCalculateSpeed()
 	delta_enc = (encoder_counts - encoder_counts_last);
 	encoder_counts_last = encoder_counts;
 	float newSpeed = (1000.0 / delta_ms) * delta_enc;
-	_fly.currSpeed = (_fly.currSpeed * 0.7) + newSpeed * 0.3;
+	_fly.currSpeed = (_fly.currSpeed * 0.65) + newSpeed * 0.35;
 	return _fly.currSpeed;
 }
 
@@ -132,7 +132,7 @@ void fw_midSpeed(){
 bool deployLift = false;
 task flw_tsk_FeedForwardCntrl(){
 	pidReset(_fly.flyPID);
-	pidInit(_fly.flyPID, 1.2, 0.05, 0, 0, 9999);
+	pidInit(_fly.flyPID, 0.9, 0.05, 0, 0, 9999);
 
 	int integralLimit;
 	if(_fly.flyPID.kI == 0){

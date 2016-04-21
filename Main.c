@@ -137,6 +137,10 @@ void utl_fw_printRecovery(){
 
 task usercontrol ()
 {
+	long initTime = nPgmTime;
+
+
+
 	stopTask(autonomous);
 
 	fw_stopFlyControl();
@@ -151,7 +155,7 @@ task usercontrol ()
 
 	while(true)
 	{
-
+		utl_fw_printRecovery();
 
 	//	_mecDrive();
 	//driveTesting();
