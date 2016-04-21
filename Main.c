@@ -155,8 +155,8 @@ task usercontrol ()
 
 	while(true)
 	{
-		utl_fw_printRecovery();
-
+	//	utl_fw_printRecovery();
+	writeDebugStreamLine("%f", _fly.flyPID.error);
 	//	_mecDrive();
 	//driveTesting();
 

@@ -184,7 +184,7 @@ void ink_fireWhenReady(int threshold){
 				wait1Msec(30);
 		if(abs(_fly.flyPID.error) < threshold){
 				//writeDebugStreamLine("shot error %d",_fly.flyPID.error);
-					driveIntake(200,false);
+					driveIntake(100,true);
 
 				if(_intakeController.ballCount == 1){
 						//driveIntake(intakeDriveTicks,true);
