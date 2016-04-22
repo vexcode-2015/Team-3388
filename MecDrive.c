@@ -67,15 +67,15 @@ float _getRightEnc(){
 	return -SensorValue[mec.encRight];
 }
 
-float GYRO_KP = 6.9 * 0.6;//6.5/1.7;
-float GYRO_KI = 1.2 / 2.0;//2.8/2.0;
-float GYRO_KD = 1.2 / 3.2;//3.3/8.0;
+float GYRO_KP = 6.3 * 0.6;//6.5/1.7;
+float GYRO_KI = 1.0 / 2.0;//2.8/2.0;
+float GYRO_KD = 1.5 / 3.2;//3.3/8.0;
 float GYRO_INTLIM = 1270;
 float GYRO_ERROR_THRESH = 2;
 
 void mec_GyroTurnAbs(int degrees, bool escapable){
 	pidInit(mec.gyroPID, GYRO_KP,GYRO_KI,GYRO_KD,0,GYRO_INTLIM);
-	pidInit(mec.slave, 	0.33,0,0,0,1270);
+	pidInit(mec.slave, 	0.03,0,0,0,1270);
 	pidReset(mec.gyroPID);
 	pidReset(mec.slave);
 
@@ -169,9 +169,9 @@ float _DRIVE_KP = 0.9 * 0.6;//0.7/1.7;
 float _DRIVE_KI = 0.880 / 2.0;//0.2/2.0;
 float _DRIVE_KD = 0.880 / 8.0;//0.6/8.0;
 float _DRIVE_SLEW = 1270;
-float _SLAVE_KP = 0.4;//0.4;
-float _SLAVE_KI = 0.02;
-float _SLAVE_KD = 0.05;//0.880 / 8.0;//0.01;
+float _SLAVE_KP = 0.3;//0.4;
+float _SLAVE_KI = 0.01;
+float _SLAVE_KD = 0.04;//0.880 / 8.0;//0.01;
 
 void mec_driveInches(float inches, int maxSpeed,int expiryms, float turnRatio = 1){
 	//def constants
@@ -190,7 +190,7 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms, float turnRatio = 
 	long timeInit = nPgmTime;
 	long atTargetTime = nPgmTime;
 	long expTime = nPgmTime + expiryms;
-	float errorThreshold = 0.5 * TICKS_PER_INCHES; //tolerance of 0.2 inches
+	float errorThreshold = 2 * TICKS_PER_INCHES; //tolerance of 0.2 inches
 
 	int initDriveL = _getLeftEnc();
 	int initDriveR = _getRightEnc();
@@ -198,11 +198,11 @@ void mec_driveInches(float inches, int maxSpeed,int expiryms, float turnRatio = 
 	writeDebugStreamLine("starting");
 	float initAngle = GyroGetAngle();
 	while(!targetReached){
-		/** if(timeInit + 400 > nPgmTime){
+		if(timeInit + 400 > nPgmTime){
 			mec.master.slewRate = 400;
 		} else{
 			mec.master.slewRate = 1270;
-		} **/
+		}
 
 		//left encoder is master
 		float error = setPoint - (( _getLeftEnc() - initDriveL) + (_getRightEnc() - initDriveR)) / 2;
