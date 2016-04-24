@@ -68,7 +68,7 @@ float _getRightEnc(){
 }
 
 float GYRO_KP = 6.3 * 0.6;//6.5/1.7;
-float GYRO_KI = 1.0 / 2.0;//2.8/2.0;
+float GYRO_KI = 1.2 / 2.0;//2.8/2.0;
 float GYRO_KD = 1.5 / 3.2;//3.3/8.0;
 float GYRO_INTLIM = 1270;
 float GYRO_ERROR_THRESH = 2;
@@ -91,7 +91,7 @@ void mec_GyroTurnAbs(int degrees, bool escapable){
 	float initTicksL = _getLeftEnc();
 	float initTicksR = _getRightEnc();
 
-	int integralLimit = 15 / mec.gyroPID.kI;
+	int integralLimit = 17 / mec.gyroPID.kI;
 	int escapeThresh = 30;
 
 	float lastLTicks = initTicksL;
@@ -169,7 +169,7 @@ float _DRIVE_KP = 0.9 * 0.6;//0.7/1.7;
 float _DRIVE_KI = 0.880 / 2.0;//0.2/2.0;
 float _DRIVE_KD = 0.880 / 8.0;//0.6/8.0;
 float _DRIVE_SLEW = 1270;
-float _SLAVE_KP = 0.3;//0.4;
+float _SLAVE_KP = 0.4;//0.4;
 float _SLAVE_KI = 0.01;
 float _SLAVE_KD = 0.04;//0.880 / 8.0;//0.01;
 

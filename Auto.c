@@ -76,24 +76,23 @@ void auto_rout_insideChallengeMid(bool isRed, bool shoot){
 void auto_rout_outsideRunShot(bool isRed){
 	int mod = isRed ? 1 : -1;
 	fw_shortSpeed();
-	setFlyRpm(SHORT_RPM + 80, SHORT_POW + 5);
+	setFlyRpm(SHORT_RPM + 90, SHORT_POW + 5);
 	ink_startRunningShot(45);
 	mec_driveInches(100,100,4000);
 	ink_stopRunningShot();
 	ink_set(127);
-	wait1Msec(500);
+	wait1Msec(700);
 	ink_set(0);
 	ink_startTask(0);
 	mec_GyroTurnRel(-90 * mod);
-	mec_driveInches(-20,100,2000);
-	mec_GyroTurnRel(78 * mod);
+	mec_driveInches(-28,100,2000);
+	mec_GyroTurnRel(80 * mod);
 	stopTask(intakeControl);
 	ink_set(-127);
-	mec_driveInches(-80,100,3000);
+	mec_driveInches(-95,100,3000);
 	mec_GyroTurnRel(45 * mod);
-	mec_driveInches(-10,127,500);
-	mec_GyroTurnRel(-45 * mod);
 
+	//mec_driveInches(80,80,3000);
 }
 
 void auto_rout_outsideShoot(bool isRed){
