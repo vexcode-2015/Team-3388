@@ -1,7 +1,8 @@
 #ifndef PIDController.h
 #define PIDController.h
-
-//Borrowing heavily from QCC2's PID code
+/** mostly from - QCC2 PID Controller Library
+  * Jason McKinney
+  * 07/22/2015 **/
 
 const short PID_LOOP_DELAY = 10;
 typedef struct {
